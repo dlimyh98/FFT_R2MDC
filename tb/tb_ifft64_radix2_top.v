@@ -92,10 +92,10 @@ module tb_ifft64_radix2_top();
     reg [15:0] ifft_out1_re_check [0:TEST_CASE*32-1];
     reg [15:0] ifft_out1_im_check [0:TEST_CASE*32-1];
     initial begin
-	    $vcdplusfile("waveform.vpd");
-        $vcdpluson();
+	    //$vcdplusfile("waveform.vpd");
+        //$vcdpluson();
         
-        //initial state
+        // Initial state
         arstn = 1'b1;
         start = 1'b0;
         #quarter_clk_period;
@@ -103,7 +103,8 @@ module tb_ifft64_radix2_top();
         #clk_period;
         #clk_period;
         #clk_period;
-        //reset
+
+        // Reset
         arstn = 1'b0;
         #clk_period;
         #clk_period;
@@ -114,18 +115,21 @@ module tb_ifft64_radix2_top();
         #clk_period;
         #clk_period;
         #clk_period;
-        //start
+
+        // Start
         start = 1'b1;
         for (i = 0;i < num_of_test_cycles; i = i + 1) begin
             #clk_period;
         end
+
         #clk_period;
         #clk_period;
         #clk_period;
         #clk_period;
         $display("\n");
-        for (j = 0;j < TEST_CASE-1;j = j + 1) begin
-            for (k = 0;k < 32;k = k + 1) begin
+
+        for (j = 0; j < TEST_CASE-1; j = j + 1) begin
+            for (k = 0; k < 32; k = k + 1) begin
                 if ((ifft_out0_re_check[j*32+k] == test_ifft_out0_reference_re_bin[j*32+k])&&
                     (ifft_out0_im_check[j*32+k] == test_ifft_out0_reference_im_bin[j*32+k])&&
                     (ifft_out1_re_check[j*32+k] == test_ifft_out1_reference_re_bin[j*32+k])&&
@@ -138,6 +142,7 @@ module tb_ifft64_radix2_top();
                 end
             end
         end
+
         if (num_of_errors == 0) begin
             $display("\n\n\nCongratulations, your code passed all the tests...\n\n\n");
 	end
@@ -145,14 +150,16 @@ module tb_ifft64_radix2_top();
 	    $display("\n\n\nYour code didn't pass all tests...");
 	end
         $display("\n");
-	// stop
-        $vcdplusoff();
+
+	// Stop
+        //$vcdplusoff();
         $finish;	
     end
 
-    //check output
+    // Check output
     reg [9:0] cnt_test_case;
     reg [4:0] cnt_cycle;
+
     initial begin
         cnt_test_case = 10'd0;
         cnt_cycle = 5'd0;
