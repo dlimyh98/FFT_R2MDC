@@ -43,7 +43,7 @@ module tb_ifft64_radix2_top();
             .bank_addr(bank_addr)
         );
 
-    //read inputs
+    // Read inputs
     reg [511:0] test_twiddle_lut_re_bin [0:0];
     reg [511:0] test_twiddle_lut_im_bin [0:0];
     reg [511:0] test_ifft_in0_re_bin [0:TEST_CASE-1];
@@ -68,13 +68,13 @@ module tb_ifft64_radix2_top();
         $readmemb("../ref/test_ifft_out1_reference_im_bin.txt",test_ifft_out1_reference_im_bin);
     end
 
-    //generate clk
+    // Generate clk
     initial begin
         clk = 1'b0;
         forever #half_clk_period clk = ~clk;
     end
 
-    //DUT inputs
+    // DUT inputs
     always @(*) begin
         twiddle_lut_re = test_twiddle_lut_re_bin[0];
         twiddle_lut_im = test_twiddle_lut_im_bin[0];
@@ -84,13 +84,14 @@ module tb_ifft64_radix2_top();
         ifft_in1_im = test_ifft_in1_im_bin[bank_addr];
     end
 
-    //start testing
+    // Start testing
     integer i,j,k;
     integer num_of_errors = 0;
     reg [15:0] ifft_out0_re_check [0:TEST_CASE*32-1];
     reg [15:0] ifft_out0_im_check [0:TEST_CASE*32-1];
     reg [15:0] ifft_out1_re_check [0:TEST_CASE*32-1];
     reg [15:0] ifft_out1_im_check [0:TEST_CASE*32-1];
+
     initial begin
 	    //$vcdplusfile("waveform.vpd");
         //$vcdpluson();
