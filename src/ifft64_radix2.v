@@ -63,8 +63,8 @@ module ifft64_radix2
 // input MUX, depends on cnt_cal, to select inputs for the IFFT pipeline at each cycle
 // input: 512 bits, ifft_in0_re, ifft_in0_im, ifft_in1_re, ifft_in1_im
 // output: 16 bits, bf1_in0_re, bf1_in0_im, bf1_in1_re, bf1_in1_im
-// selection signal: cnt_cal (e.g. when cnt_cal = 0,  bf1_in0_re = ifft_in0_re[32*16-1:31*16], ..., bf1_in0_im = ifft_in0_im[32*16-1:31*16], ...
-//                                 when cnt_cal = 31, bf1_in0_re = ifft_in0_re[ 1*16-1: 0*16], ..., bf1_in0_im = ifft_in0_im[ 1*16-1: 0*16], ...)
+// selection signal: cnt_cal (e.g. when cnt_cal = 0,  bf1_in0_re = ifft_in0_re[32*16-1 : 31*16], ..., bf1_in0_im = ifft_in0_im[32*16-1 : 31*16], ...
+//                                 when cnt_cal = 31, bf1_in0_re = ifft_in0_re[1*16-1 : 0*16], ..., bf1_in0_im = ifft_in0_im[1*16-1 : 0*16], ...)
 // fill in your code here
 
 

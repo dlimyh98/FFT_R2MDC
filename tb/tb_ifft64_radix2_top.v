@@ -1,12 +1,12 @@
 module tb_ifft64_radix2_top();
 
     parameter TEST_CASE = 1000;
-    parameter cycles_of_each_case = 32;
-    parameter num_of_test_cycles = (TEST_CASE+1)*cycles_of_each_case-1;
+    parameter CYCLES_OF_EACH_CASE = 32;
+    parameter NUM_OF_TEST_CYCLES = (TEST_CASE+1)*CYCLES_OF_EACH_CASE-1;
 
-    parameter clk_period = 10;
-    parameter half_clk_period = clk_period/2;
-    parameter quarter_clk_period = clk_period/4;
+    parameter CLK_PERIOD = 10;
+    parameter HALF_CLK_PERIOD = CLK_PERIOD/2;
+    parameter QUARTER_CLK_PERIOD = CLK_PERIOD/4;
 
     reg clk;
     reg arstn;
@@ -68,13 +68,15 @@ module tb_ifft64_radix2_top();
         $readmemb("../ref/test_ifft_out1_reference_im_bin.txt",test_ifft_out1_reference_im_bin);
     end
 
-    // Generate clk
+
+    /**************************** CLK GENERATION ****************************/
     initial begin
         clk = 1'b0;
-        forever #half_clk_period clk = ~clk;
+        forever #HALF_CLK_PERIOD clk = ~clk;
     end
 
-    // DUT inputs
+
+    /**************************** PROVIDE DUT INPUTS ****************************/
     always @(*) begin
         twiddle_lut_re = test_twiddle_lut_re_bin[0];
         twiddle_lut_im = test_twiddle_lut_im_bin[0];
@@ -84,7 +86,8 @@ module tb_ifft64_radix2_top();
         ifft_in1_im = test_ifft_in1_im_bin[bank_addr];
     end
 
-    // Start testing
+
+    /**************************** TESTING ****************************/
     integer i,j,k;
     integer num_of_errors = 0;
     reg [15:0] ifft_out0_re_check [0:TEST_CASE*32-1];
@@ -99,34 +102,34 @@ module tb_ifft64_radix2_top();
         // Initial state
         arstn = 1'b1;
         start = 1'b0;
-        #quarter_clk_period;
-        #clk_period;
-        #clk_period;
-        #clk_period;
-        #clk_period;
+        #QUARTER_CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
 
         // Reset
         arstn = 1'b0;
-        #clk_period;
-        #clk_period;
-        #clk_period;
-        #clk_period;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
         arstn = 1'b1;
-        #clk_period;
-        #clk_period;
-        #clk_period;
-        #clk_period;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
 
         // Start
         start = 1'b1;
-        for (i = 0;i < num_of_test_cycles; i = i + 1) begin
-            #clk_period;
+        for (i = 0;i < NUM_OF_TEST_CYCLES; i = i + 1) begin
+            #CLK_PERIOD;
         end
 
-        #clk_period;
-        #clk_period;
-        #clk_period;
-        #clk_period;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
+        #CLK_PERIOD;
         $display("\n");
 
         for (j = 0; j < TEST_CASE-1; j = j + 1) begin
@@ -135,10 +138,10 @@ module tb_ifft64_radix2_top();
                     (ifft_out0_im_check[j*32+k] == test_ifft_out0_reference_im_bin[j*32+k])&&
                     (ifft_out1_re_check[j*32+k] == test_ifft_out1_reference_re_bin[j*32+k])&&
                     (ifft_out1_im_check[j*32+k] == test_ifft_out1_reference_im_bin[j*32+k])) begin
-	    	        num_of_errors = num_of_errors;
+                        num_of_errors = num_of_errors;
                 end
-	        else begin
-	    	    num_of_errors = num_of_errors + 1;
+                else begin
+                    num_of_errors = num_of_errors + 1;
                     $display("There is a failure at the %d th cycle in the %d th test case",k,j);
                 end
             end
@@ -146,18 +149,19 @@ module tb_ifft64_radix2_top();
 
         if (num_of_errors == 0) begin
             $display("\n\n\nCongratulations, your code passed all the tests...\n\n\n");
-	end
+        end
         else begin
-	    $display("\n\n\nYour code didn't pass all tests...");
-	end
+            $display("\n\n\nYour code didn't pass all tests...");
+        end
         $display("\n");
 
-	// Stop
+        // Stop
         //$vcdplusoff();
         $finish;	
     end
 
-    // Check output
+
+    /**************************** CHECK OUTPUT ****************************/
     reg [9:0] cnt_test_case;
     reg [4:0] cnt_cycle;
 

@@ -1,5 +1,4 @@
-////////////////////////////////////////////////////////////////
-// input ports
+// Input ports
 // clk               -clock signal
 // arstn             -asynchronous reset, to reset the system (active low)
 // start             -start IFFT calculation
@@ -10,14 +9,13 @@
 // twiddle_lut_re    -from testbench, twiddle factors needed during 64IFFT calculation (32 elements * 16 bits = 512 bits)
 // twiddle_lut_im    -from testbench, twiddle factors needed during 64IFFT calculation (32 elements * 16 bits = 512 bits)
 
-// output ports
+// Output ports
 // ifft_out0_re      -to testbench, the 1st output (real part) of the IFFT pipeline (1 elements * 16 bits = 16 bits)
 // ifft_out0_im      -to testbench, the 1st output (imag part) of the IFFT pipeline (1 elements * 16 bits = 16 bits) 
 // ifft_out1_re      -to testbench, the 2nd output (real part) of the IFFT pipeline (1 elements * 16 bits = 16 bits) 
 // ifft_out1_im      -to testbench, the 2nd output (imag part) of the IFFT pipeline (1 elements * 16 bits = 16 bits) 
 // start_check       -to testbench, to be activated when the first effective result is generated at the output of the IFFT papeline (active high)
 // bank_addr         -to testbench, to select test case (10 bits)
-////////////////////////////////////////////////////////////////
 module ifft64_radix2_top
     (   
         input clk, 
@@ -44,13 +42,6 @@ module ifft64_radix2_top
 // instantiate your ifft_ctrl.v and ifft64_radix2.v here
 // fill in your code here
 
-
-// ifft_ctrl.v
-// fill in your code here
-
-
-// ifft64_radix2.v
-// fill in your code here
 
 
 
