@@ -39,10 +39,19 @@
         - OUTPUTS: [15:0] twiddle_lut_re, [15:0]twiddle_lut_im
         - MUX selection signal chooses between 2^5 = 32 different (twiddle_re,twiddle_im) twiddle factor pairs
             - Suppose we look at TWIDDLE_MUX_1 (Choose between W0,W1,...,W31)
-                - i.e twiddle_sel1 == 5'b0; Choose [15:0] of twiddle_lut_re and twiddle_lut_im (W0)
-                - i.e twiddle_sel1 == 5'b1; Choose [31:16] of twiddle_lut_re and twiddle_lut_im (W1)
+                - i.e twiddle_sel1 == 5'b0; Choose [511:496] of twiddle_lut_re and twiddle_lut_im (W0)
+                - i.e twiddle_sel1 == 5'b1; Choose [495:480] of twiddle_lut_re and twiddle_lut_im (W1)
             - Suppose we look at TWIDDLE_MUX_2 (Choose between W0,W2,...,W30)
-                - i.e twiddle_sel2 == 5'b0; Choose [15:0] of twiddle_lut_re and twiddle_lut_im (W0)
-                - i.e twiddle_sel2 == 5'b2; Choose [47:32] of twiddle_lut_re and twiddle_lut_im (W2)
-    - Commutator Unit
-        - Swaps INPUTS (cm_in0, cm_in1)
+                - i.e twiddle_sel2 == 5'b0; Choose [511:496] of twiddle_lut_re and twiddle_lut_im (W0)
+                - i.e twiddle_sel2 == 5'b2; Choose [479:464] of twiddle_lut_re and twiddle_lut_im (W2)
+
+7. Commutator Unit
+    - Swaps INPUTS (cm_in0, cm_in1)
+
+8. BFU Addition
+    - Signed fixed point representation = <1,7,8> using 2s complement
+        - Maximal value is 127.99609375
+    - Suppose A = 0_111_1111_0111_1110   // 32638; 127.4921875
+    - Suppose B = 0_111_1100_1111_1110   // 31998; 124.9921875
+        - A + B = 1_111_1100_0111_1100   // Summation; -3.515625
+        - We have an overflow.

@@ -4,19 +4,19 @@
 // start           -start IFFT calculation
 
 // Output ports
-// start_check     -to testbench, to be activated when the first effective result is generated at the output of the IFFT pipeline (active high)
-// bank_addr       -to select test case (10 bits)
-// twiddle_sel1    -control signal, to select twiddle factors for the 1st layer in the 64IFFT pipeline
-// twiddle_sel2    -control signal, to select twiddle factors for the 2nd layer in the 64IFFT pipeline
-// twiddle_sel3    -control signal, to select twiddle factors for the 3rd layer in the 64IFFT pipeline
-// twiddle_sel4    -control signal, to select twiddle factors for the 4th layer in the 64IFFT pipeline
-// twiddle_sel5    -control signal, to select twiddle factors for the 5th layer in the 64IFFT pipeline
-// pattern2        -control signal, to contol the communator at the 2nd layer in the 64IFFT pipeline
-// pattern3        -control signal, to contol the communator at the 3rd layer in the 64IFFT pipeline
-// pattern4        -control signal, to contol the communator at the 4th layer in the 64IFFT pipeline
-// pattern5        -control signal, to contol the communator at the 5th layer in the 64IFFT pipeline
-// pattern6        -control signal, to contol the communator at the 6th layer in the 64IFFT pipeline
-// cntr_IFFT_input_pairs -count 32 cycles for the IFFT Pipeline (before valid result shows up at ifft_out0 and ifft_out1)
+// start_check     -COMB; signal to testbench, activated when the first effective result is generated at the output of the IFFT pipeline (active high)
+// Bank_Addr       -SYNC, to select test case (10 bits)
+// twiddle_sel1    -COMB control signal, to select twiddle factors for the 1st layer in the 64IFFT pipeline
+// twiddle_sel2    -COMB control signal, to select twiddle factors for the 2nd layer in the 64IFFT pipeline
+// twiddle_sel3    -COMB control signal, to select twiddle factors for the 3rd layer in the 64IFFT pipeline
+// twiddle_sel4    -COMB control signal, to select twiddle factors for the 4th layer in the 64IFFT pipeline
+// twiddle_sel5    -COMB control signal, to select twiddle factors for the 5th layer in the 64IFFT pipeline
+// pattern2        -SYNC control signal, to contol the communator at the 2nd layer in the 64IFFT pipeline
+// pattern3        -SYNC control signal, to contol the communator at the 3rd layer in the 64IFFT pipeline
+// pattern4        -SYNC control signal, to contol the communator at the 4th layer in the 64IFFT pipeline
+// pattern5        -SYNC control signal, to contol the communator at the 5th layer in the 64IFFT pipeline
+// pattern6        -SYNC control signal, to contol the communator at the 6th layer in the 64IFFT pipeline
+// cntr_IFFT_input_pairs -SYNC, count 32 cycles for the IFFT Pipeline (before valid result shows up at ifft_out0 and ifft_out1)
 
 module ifft_ctrl
     (
@@ -24,7 +24,7 @@ module ifft_ctrl
         input ARSTN,
         input Start,
         output reg Start_Check = 1'b0,
-        output reg [9:0] bank_addr = 10'b0,
+        output reg [9:0] Bank_Addr = 10'b0,
         output reg [4:0] twiddle_sel1 = 5'b0,
         output reg [4:0] twiddle_sel2 = 5'b0,
         output reg [4:0] twiddle_sel3 = 5'b0,
@@ -69,7 +69,6 @@ module ifft_ctrl
     // https://courses.cs.washington.edu/courses/cse370/99sp/sections/may18/slides/sld002.htm
 
     /************************************ SEQUENTIAL STATE LOGIC ************************************/
-    // TODO: bank_addr, 10-bit counter (sequential logic, reset with arstn) to select test case
     always @ (posedge CLK or negedge ARSTN) begin
         if (!ARSTN) begin
             current_State <= RESET;
@@ -79,16 +78,16 @@ module ifft_ctrl
             twiddle_layer3_cntr <= 0;
             twiddle_layer4_cntr <= 0;
             twiddle_layer5_cntr <= 0;
+            cnt_testcases <= 0;
 
             // Reset all synchronous output signals
-            bank_addr <= 0;
+            Bank_Addr <= 0;
             cntr_IFFT_input_pairs <= 0;
             pattern2 <= 0;
             pattern3 <= 0;
             pattern4 <= 0;
             pattern5 <= 0;
             pattern6 <= 0;
-
         end
         else begin
             current_State <= next_State;
@@ -115,6 +114,10 @@ module ifft_ctrl
                 twiddle_layer3_cntr <= twiddle_layer3_cntr + 1;
                 twiddle_layer4_cntr <= twiddle_layer4_cntr + 1;
                 twiddle_layer5_cntr <= twiddle_layer5_cntr + 1;
+            end
+            else if (current_State == VERIFICATION) begin
+                Bank_Addr <= Bank_Addr + 1;
+                cnt_testcases <= cnt_testcases + 1;
             end
         end
     end
@@ -153,7 +156,6 @@ module ifft_ctrl
 
     /************************************ COMBINATIONAL INTERNAL AND OUTPUT CONTROL SIGNALS (Twiddle and Communator) ************************************/
     always @ (*) begin
-        cnt_testcases = 10'bx;
         Start_Check = 1'bx;
         twiddle_sel1 = 5'bx;
         twiddle_sel2 = 5'bx;
@@ -163,9 +165,6 @@ module ifft_ctrl
 
         case (current_State)
             RESET: begin
-                // Reset combinational internal signals
-                cnt_testcases = 0;
-
                 // Reset combinational output signals
                 Start_Check = 0;
                 twiddle_sel1 = 0;
@@ -176,7 +175,6 @@ module ifft_ctrl
             end
 
             IDLE: begin
-                cnt_testcases = 10'bx;
                 Start_Check = 1'b0;
 
                 twiddle_sel1 = 5'dx;
@@ -193,6 +191,8 @@ module ifft_ctrl
 
             // We stay in this state for exactly 32 cycles (numCycles required for FIRST valid output of FIRST testCase to show up at ifft_out0 and ifft_out1)
             FFT_PIPELINE: begin
+                Start_Check = 0;
+
                 // twiddle_sel1: Picks between W0(in0 & in32), W1(in1 & in33), ... , W31(in31 & in63)
                 // twiddle_sel2: Picks between W0(in0 & in16, in32 & in48), W2(in1 & in17, in33 & in49), ... , W30(in15 & in31, in47 & in63)
                 // twiddle_sel3: Picks between W0,W4,...,W28
@@ -206,12 +206,11 @@ module ifft_ctrl
                 twiddle_sel5 = twiddle_layer5_cntr*16;
             end
 
-            /*
             VERIFICATION: begin
                 Start_Check = 1'b1;
-
             end
 
+            /*
             DONE: begin
 
             end

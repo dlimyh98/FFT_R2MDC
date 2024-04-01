@@ -53,6 +53,6 @@ assign intermediate_re = (A_minus_B_re * W_re) - (A_minus_B_im * W_im);
 assign intermediate_im = (A_minus_B_re * W_im) + (A_minus_B_im * W_re);
 
 assign Y1_re = intermediate_re >> FIXED_POINT_NUM_FRACTIONAL_BITS;
-assign Y1_im = intermediate_re >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+assign Y1_im = intermediate_im >> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
 endmodule

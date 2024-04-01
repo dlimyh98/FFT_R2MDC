@@ -45,7 +45,6 @@ module tb_ifft_ctrl(
     end
 
     initial begin
-
         // Initial State
         tb_ARSTN = 1'b1;
         tb_Start = 1'b0;
@@ -57,5 +56,6 @@ module tb_ifft_ctrl(
         // Start
         #50 tb_Start = 1'b1;
     end
+
 
 endmodule

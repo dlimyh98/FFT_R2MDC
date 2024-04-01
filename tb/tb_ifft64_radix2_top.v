@@ -4,7 +4,7 @@ module tb_ifft64_radix2_top();
     parameter CYCLES_OF_EACH_CASE = 32;
     parameter NUM_OF_TEST_CYCLES = (TEST_CASE+1)*CYCLES_OF_EACH_CASE-1;
 
-    parameter CLK_PERIOD = 10;
+    parameter CLK_PERIOD = 40;
     parameter HALF_CLK_PERIOD = CLK_PERIOD/2;
     parameter QUARTER_CLK_PERIOD = CLK_PERIOD/4;
 
@@ -26,9 +26,9 @@ module tb_ifft64_radix2_top();
 
     ifft64_radix2_top DUT
         (   
-            .clk(clk), 
-            .arstn(arstn),
-            .start(start),
+            .CLK(clk), 
+            .ARSTN(arstn),
+            .Start(start),
             .ifft_in0_re(ifft_in0_re),
             .ifft_in0_im(ifft_in0_im),
             .ifft_in1_re(ifft_in1_re),
@@ -56,6 +56,7 @@ module tb_ifft64_radix2_top();
     reg [15:0] test_ifft_out1_reference_im_bin [0:TEST_CASE*32-1];
 
     initial begin
+        /* Use below if compiling manually
         $readmemb("../ref/test_twiddle_lut_re_bin.txt",test_twiddle_lut_re_bin);
         $readmemb("../ref/test_twiddle_lut_im_bin.txt",test_twiddle_lut_im_bin);
         $readmemb("../ref/test_ifft_in0_re_bin.txt",test_ifft_in0_re_bin);
@@ -66,6 +67,17 @@ module tb_ifft64_radix2_top();
         $readmemb("../ref/test_ifft_out0_reference_im_bin.txt",test_ifft_out0_reference_im_bin);
         $readmemb("../ref/test_ifft_out1_reference_re_bin.txt",test_ifft_out1_reference_re_bin);
         $readmemb("../ref/test_ifft_out1_reference_im_bin.txt",test_ifft_out1_reference_im_bin);
+        */
+        $readmemb("test_twiddle_lut_re_bin.txt",test_twiddle_lut_re_bin);
+        $readmemb("test_twiddle_lut_im_bin.txt",test_twiddle_lut_im_bin);
+        $readmemb("test_ifft_in0_re_bin.txt",test_ifft_in0_re_bin);
+        $readmemb("test_ifft_in0_im_bin.txt",test_ifft_in0_im_bin);
+        $readmemb("test_ifft_in1_re_bin.txt",test_ifft_in1_re_bin);
+        $readmemb("test_ifft_in1_im_bin.txt",test_ifft_in1_im_bin);
+        $readmemb("test_ifft_out0_reference_re_bin.txt",test_ifft_out0_reference_re_bin);
+        $readmemb("test_ifft_out0_reference_im_bin.txt",test_ifft_out0_reference_im_bin);
+        $readmemb("test_ifft_out1_reference_re_bin.txt",test_ifft_out1_reference_re_bin);
+        $readmemb("test_ifft_out1_reference_im_bin.txt",test_ifft_out1_reference_im_bin);
     end
 
 
@@ -130,7 +142,7 @@ module tb_ifft64_radix2_top();
         #CLK_PERIOD;
         #CLK_PERIOD;
         #CLK_PERIOD;
-        $display("\n");
+        $display("Testcase Checking Loop\n");
 
         for (j = 0; j < TEST_CASE-1; j = j + 1) begin
             for (k = 0; k < 32; k = k + 1) begin
