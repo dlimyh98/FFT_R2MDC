@@ -138,7 +138,7 @@ module ifft_ctrl
             end
 
             FFT_PIPELINE: begin
-                if (cntr_IFFT_input_pairs == IFFT_PIPELINE_LATENCY-1) next_State = VERIFICATION;
+                if (cntr_IFFT_input_pairs == IFFT_PIPELINE_LATENCY) next_State = VERIFICATION;
                 else next_State = FFT_PIPELINE;
             end
 

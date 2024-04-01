@@ -60,6 +60,7 @@ module ifft64_radix2
 
     localparam CNTR_MAX_VALUE = 31;
     localparam NUM_BITS_PER_INPUT = 16;
+    localparam NUM_INPUTS_PER_PATH = 32;
 
 /************************************* INPUT MUX *************************************/
     wire [15:0] bf1_in0_re;
@@ -92,7 +93,6 @@ module ifft64_radix2
 
 /************************************* LAYER 1 *************************************/
     // Twiddle MUX1 (Choose between W0,W1,W2,...,W31)
-    //TODO: Set as wire signed?
     wire [15:0] twiddle1_re;
     wire [15:0] twiddle1_im;
 
@@ -123,10 +123,17 @@ module ifft64_radix2
 /************************************* LAYER 2 *************************************/
     // Commutator
     localparam L1_L2_delay_cycles = 15;
-    reg [15:0] delay_latch_bef_cm2_re [0:L1_L2_delay_cycles];
-    reg [15:0] delay_latch_bef_cm2_im [0:L1_L2_delay_cycles];
-    reg [15:0] delay_latch_aft_cm2_re [0:L1_L2_delay_cycles];
-    reg [15:0] delay_latch_aft_cm2_im [0:L1_L2_delay_cycles];
+    reg begin_FF_output_bef_cm2 = 1'b0;
+    reg enable_FF_saving_bef_cm2 = 1'b1;
+    reg [4:0] FF_index_bef_cm2 = 5'b0;
+    reg [15:0] delay_FF_bef_cm2_re [0:NUM_INPUTS_PER_PATH-1];
+    reg [15:0] delay_FF_bef_cm2_im [0:NUM_INPUTS_PER_PATH-1];
+
+    reg begin_FF_output_aft_cm2 = 1'b0;
+    reg enable_FF_saving_aft_cm2 = 1'b1;
+    reg [4:0] FF_index_aft_cm2 = 5'b0;
+    reg [15:0] delay_FF_aft_cm2_re [0:NUM_INPUTS_PER_PATH-1];
+    reg [15:0] delay_FF_aft_cm2_im [0:NUM_INPUTS_PER_PATH-1];
 
     wire [15:0] cm2_in0_re;
     wire [15:0] cm2_in0_im;
@@ -140,19 +147,34 @@ module ifft64_radix2
     assign cm2_in0_re = bf1_out0_re;
     assign cm2_in0_im = bf1_out0_im;
 
-    // Delay before commutator
     always @ (posedge CLK) begin
-        delay_latch_bef_cm2_re[cntr_IFFT_input_pairs] <= bf1_out1_re;
-        delay_latch_bef_cm2_im[cntr_IFFT_input_pairs] <= bf1_out1_im;
-
-        if ((cntr_IFFT_input_pairs >= L1_L2_delay_cycles)
-            && (cntr_IFFT_input_pairs <= CNTR_MAX_VALUE-1)) begin
-                cm2_in1_re <= delay_latch_bef_cm2_re[cntr_IFFT_input_pairs-L1_L2_delay_cycles];
-                cm2_in1_im <= delay_latch_bef_cm2_im[cntr_IFFT_input_pairs-L1_L2_delay_cycles];
+        if (begin_FF_output_bef_cm2) begin
+            cm2_in1_re <= delay_FF_bef_cm2_re[FF_index_bef_cm2];
+            cm2_in1_im <= delay_FF_bef_cm2_im[FF_index_bef_cm2];
+            FF_index_bef_cm2 <= FF_index_bef_cm2 + 1;
         end
         else begin
             cm2_in1_re <= 16'bx;
             cm2_in1_im <= 16'bx;
+        end
+    end
+
+    always @ (posedge CLK) begin
+        // Save the 32 values from bf1_out1 into FF registers
+        if (enable_FF_saving_bef_cm2) begin
+            delay_FF_bef_cm2_re[cntr_IFFT_input_pairs] <= bf1_out1_re;
+            delay_FF_bef_cm2_im[cntr_IFFT_input_pairs] <= bf1_out1_im;
+
+            if (cntr_IFFT_input_pairs >= L1_L2_delay_cycles-1) begin
+                // Signal to output saved values from FF (Begins two cycles from now)
+                begin_FF_output_bef_cm2 <= 1'b1;
+            end
+
+            if (FF_index_bef_cm2 == NUM_INPUTS_PER_PATH-1) begin
+                begin_FF_output_bef_cm2 <= 1'b0;
+                FF_index_bef_cm2 <= 5'bX;
+                enable_FF_saving_bef_cm2 <= 1'b0;
+            end
         end
     end
 
@@ -189,21 +211,38 @@ module ifft64_radix2
     assign bf2_in1_re = cm2_out1_re;
     assign bf2_in1_im = cm2_out1_im;
 
-    // Delay after commutator
     always @ (posedge CLK) begin
-        delay_latch_aft_cm2_re[cntr_IFFT_input_pairs] <= cm2_out0_re;
-        delay_latch_aft_cm2_im[cntr_IFFT_input_pairs] <= cm2_out0_im;
-
-        if ((cntr_IFFT_input_pairs >= L1_L2_delay_cycles)
-            && (cntr_IFFT_input_pairs <= CNTR_MAX_VALUE-1)) begin
-                bf2_in0_re <= delay_latch_aft_cm2_re[cntr_IFFT_input_pairs-L1_L2_delay_cycles];
-                bf2_in0_im <= delay_latch_aft_cm2_im[cntr_IFFT_input_pairs-L1_L2_delay_cycles];
+        if (begin_FF_output_aft_cm2) begin
+            bf2_in0_re <= delay_FF_aft_cm2_re[FF_index_aft_cm2];
+            bf2_in0_im <= delay_FF_aft_cm2_im[FF_index_aft_cm2];
+            FF_index_aft_cm2 <= FF_index_aft_cm2 + 1;
         end
         else begin
             bf2_in0_re <= 16'bx;
             bf2_in0_im <= 16'bx;
         end
     end
+
+
+    always @ (posedge CLK) begin
+        // Save the 32 values from cm2_out0 into FF registers
+        if (enable_FF_saving_aft_cm2) begin
+            delay_FF_aft_cm2_re[cntr_IFFT_input_pairs] <= cm2_out0_re;
+            delay_FF_aft_cm2_im[cntr_IFFT_input_pairs] <= cm2_out0_im;
+
+            if (cntr_IFFT_input_pairs >= L1_L2_delay_cycles-1) begin
+                // Signal to output saved values from FF (Begins two cycles from now)
+                begin_FF_output_aft_cm2 <= 1'b1;
+            end
+
+            if (FF_index_aft_cm2 == NUM_INPUTS_PER_PATH-1) begin
+                begin_FF_output_aft_cm2 <= 1'b0;
+                FF_index_aft_cm2 <= 5'bX;
+                enable_FF_saving_aft_cm2 <= 1'b0;
+            end
+        end
+    end
+
 
     bf_radix2 BF2 (.A_re(bf2_in0_re),
                   .A_im(bf2_in0_im),
