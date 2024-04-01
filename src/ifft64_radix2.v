@@ -121,63 +121,30 @@ module ifft64_radix2
 
 
 /************************************* LAYER 2 *************************************/
-    // Commutator
-    localparam L1_L2_delay_cycles = 15;
-    reg begin_FF_output_bef_cm2 = 1'b0;
-    reg enable_FF_saving_bef_cm2 = 1'b1;
-    reg [4:0] FF_index_bef_cm2 = 5'b0;
-    reg [15:0] delay_FF_bef_cm2_re [0:NUM_INPUTS_PER_PATH-1];
-    reg [15:0] delay_FF_bef_cm2_im [0:NUM_INPUTS_PER_PATH-1];
-
-    reg begin_FF_output_aft_cm2 = 1'b0;
-    reg enable_FF_saving_aft_cm2 = 1'b1;
-    reg [4:0] FF_index_aft_cm2 = 5'b0;
-    reg [15:0] delay_FF_aft_cm2_re [0:NUM_INPUTS_PER_PATH-1];
-    reg [15:0] delay_FF_aft_cm2_im [0:NUM_INPUTS_PER_PATH-1];
-
     wire [15:0] cm2_in0_re;
     wire [15:0] cm2_in0_im;
-    reg [15:0] cm2_in1_re;
-    reg [15:0] cm2_in1_im;
+    wire [15:0] cm2_in1_re;
+    wire [15:0] cm2_in1_im;
     wire [15:0] cm2_out0_re;
     wire [15:0] cm2_out0_im;
     wire [15:0] cm2_out1_re;
     wire [15:0] cm2_out1_im;
 
-    assign cm2_in0_re = bf1_out0_re;
-    assign cm2_in0_im = bf1_out0_im;
+    // Pre-Delay to Commutator
+    predelay_commutator #(.DELAY_CYCLES(15),
+                         .NUM_INPUTS_PER_PATH(32))
+    PreDelay_Commutator2 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .bf_out0_re(bf1_out0_re),
+                          .bf_out0_im(bf1_out0_im),
+                          .bf_out1_re(bf1_out1_re),
+                          .bf_out1_im(bf1_out1_im),
+                          .cm_in0_re(cm2_in0_re),
+                          .cm_in0_im(cm2_in0_im),
+                          .cm_in1_re(cm2_in1_re),
+                          .cm_in1_im(cm2_in1_im));
 
-    always @ (posedge CLK) begin
-        if (begin_FF_output_bef_cm2) begin
-            cm2_in1_re <= delay_FF_bef_cm2_re[FF_index_bef_cm2];
-            cm2_in1_im <= delay_FF_bef_cm2_im[FF_index_bef_cm2];
-            FF_index_bef_cm2 <= FF_index_bef_cm2 + 1;
-        end
-        else begin
-            cm2_in1_re <= 16'bx;
-            cm2_in1_im <= 16'bx;
-        end
-    end
-
-    always @ (posedge CLK) begin
-        // Save the 32 values from bf1_out1 into FF registers
-        if (enable_FF_saving_bef_cm2) begin
-            delay_FF_bef_cm2_re[cntr_IFFT_input_pairs] <= bf1_out1_re;
-            delay_FF_bef_cm2_im[cntr_IFFT_input_pairs] <= bf1_out1_im;
-
-            if (cntr_IFFT_input_pairs >= L1_L2_delay_cycles-1) begin
-                // Signal to output saved values from FF (Begins two cycles from now)
-                begin_FF_output_bef_cm2 <= 1'b1;
-            end
-
-            if (FF_index_bef_cm2 == NUM_INPUTS_PER_PATH-1) begin
-                begin_FF_output_bef_cm2 <= 1'b0;
-                FF_index_bef_cm2 <= 5'bX;
-                enable_FF_saving_bef_cm2 <= 1'b0;
-            end
-        end
-    end
-
+    // Commutator
     commutator_radix2 Commutator2 (.in_0_re(cm2_in0_re),
                                    .in_0_im(cm2_in0_im),
                                    .in_1_re(cm2_in1_re),
@@ -188,6 +155,29 @@ module ifft64_radix2
                                    .out_1_re(cm2_out1_re),
                                    .out_1_im(cm2_out1_im));
 
+    wire [15:0] bf2_in0_re;
+    wire [15:0] bf2_in0_im;
+    wire [15:0] bf2_in1_re;
+    wire [15:0] bf2_in1_im;
+    wire [15:0] bf2_out0_re;
+    wire [15:0] bf2_out0_im;
+    wire [15:0] bf2_out1_re;
+    wire [15:0] bf2_out1_im;
+
+    // Post-Delay Commutator
+    postdelay_commutator #(.DELAY_CYCLES(15),
+                         .NUM_INPUTS_PER_PATH(32))
+    PostDelay_Commutator2 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .cm_out0_re(cm2_out0_re),
+                          .cm_out0_im(cm2_out0_im),
+                          .cm_out1_re(cm2_out1_re),
+                          .cm_out1_im(cm2_out1_im),
+                          .bf_in0_re(bf2_in0_re),
+                          .bf_in0_im(bf2_in0_im),
+                          .bf_in1_re(bf2_in1_re),
+                          .bf_in1_im(bf2_in1_im));
+
     // Twiddle MUX2 (Choose between W0,W2,W4,...,W30)
     wire [15:0] twiddle2_re;
     wire [15:0] twiddle2_im;
@@ -197,53 +187,8 @@ module ifft64_radix2
     // Output: 16 bits; (twiddle2_re, twiddle2_im)
     assign twiddle2_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel2)*NUM_BITS_PER_INPUT)+:15];
     assign twiddle2_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel2)*NUM_BITS_PER_INPUT)+:15];
-        
+
     // Butterfly Unit (with Twiddle Factor)
-    reg [15:0] bf2_in0_re;
-    reg [15:0] bf2_in0_im;
-    wire [15:0] bf2_in1_re;
-    wire [15:0] bf2_in1_im;
-    wire [15:0] bf2_out0_re;
-    wire [15:0] bf2_out0_im;
-    wire [15:0] bf2_out1_re;
-    wire [15:0] bf2_out1_im;
-
-    assign bf2_in1_re = cm2_out1_re;
-    assign bf2_in1_im = cm2_out1_im;
-
-    always @ (posedge CLK) begin
-        if (begin_FF_output_aft_cm2) begin
-            bf2_in0_re <= delay_FF_aft_cm2_re[FF_index_aft_cm2];
-            bf2_in0_im <= delay_FF_aft_cm2_im[FF_index_aft_cm2];
-            FF_index_aft_cm2 <= FF_index_aft_cm2 + 1;
-        end
-        else begin
-            bf2_in0_re <= 16'bx;
-            bf2_in0_im <= 16'bx;
-        end
-    end
-
-
-    always @ (posedge CLK) begin
-        // Save the 32 values from cm2_out0 into FF registers
-        if (enable_FF_saving_aft_cm2) begin
-            delay_FF_aft_cm2_re[cntr_IFFT_input_pairs] <= cm2_out0_re;
-            delay_FF_aft_cm2_im[cntr_IFFT_input_pairs] <= cm2_out0_im;
-
-            if (cntr_IFFT_input_pairs >= L1_L2_delay_cycles-1) begin
-                // Signal to output saved values from FF (Begins two cycles from now)
-                begin_FF_output_aft_cm2 <= 1'b1;
-            end
-
-            if (FF_index_aft_cm2 == NUM_INPUTS_PER_PATH-1) begin
-                begin_FF_output_aft_cm2 <= 1'b0;
-                FF_index_aft_cm2 <= 5'bX;
-                enable_FF_saving_aft_cm2 <= 1'b0;
-            end
-        end
-    end
-
-
     bf_radix2 BF2 (.A_re(bf2_in0_re),
                   .A_im(bf2_in0_im),
                   .B_re(bf2_in1_re),
@@ -257,100 +202,15 @@ module ifft64_radix2
 
 
 /************************************* LAYER 3 *************************************/
-    // twiddle factor MUX, depends on twiddle_sel3, to select twiddle factors for the 3rd layer of the 64IFFT pipeline
-    // input: 512 bits, twiddle_lut_re, twiddle_lut_im
-    // output: 16 bits, twiddle3_re, twiddle3_im
-    // fill in your code here
 
 
-    //re-arrange data
-        // delay before commutator
-        // fill in your code here
+/************************************* LAYER 4 *************************************/
 
 
-        // commutator
-        // fill in your code here
+/************************************* LAYER 5 *************************************/
 
 
-        // delay after commutator
-        // fill in your code here
-
-
-    // butterfly radix calculation with twiddle factor
-    // Y0 = A + B
-    // Y1 = (A - B)*W
-    // instantiate your bf_radix2.v here
-    // fill in your code here
-
-
-//layer 4
-    // twiddle factor MUX, depends on twiddle_sel4, to select twiddle factors for the 4th layer of the 64IFFT pipeline
-    // input: 512 bits, twiddle_lut_re, twiddle_lut_im
-    // output: 16 bits, twiddle4_re, twiddle4_im
-    // fill in your code here
-
-
-    //re-arrange data
-        // delay before commutator
-        // fill in your code here
-
-
-        // commutator
-        // fill in your code here
-
-
-        // delay after commutator
-        // fill in your code here
-
-
-    // butterfly radix calculation with twiddle factor
-    // Y0 = A + B
-    // Y1 = (A - B)*W
-    // instantiate your bf_radix2.v here
-    // fill in your code here
-
-
-//layer 5
-    // twiddle factor MUX, depends on twiddle_sel5, to select twiddle factors for the 5th layer of the 64IFFT pipeline
-    // input: 512 bits, twiddle_lut_re, twiddle_lut_im
-    // output: 16 bits, twiddle5_re, twiddle5_im
-    // fill in your code here
-
-
-    //re-arrange data
-        // delay before commutator
-        // fill in your code here
-
-
-        // commutator
-        // fill in your code here
-
-
-        // delay after commutator
-        // fill in your code here
-
-
-    // butterfly radix calculation with twiddle factor
-    // Y0 = A + B
-    // Y1 = (A - B)*W
-    // instantiate your bf_radix2.v here
-    // fill in your code here
-
-
-//layer 6
-    //re-arrange data
-        // delay before commutator
-        // fill in your code here
-
-
-        // commutator
-        // fill in your code here
-
-
-        // delay after commutator
-        // fill in your code here
-
-
+/************************************* LAYER 6 *************************************/
     // butterfly radix calculation without twiddle factor
     // Y0 = A + B
     // Y1 = A - B

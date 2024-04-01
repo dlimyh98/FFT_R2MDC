@@ -181,6 +181,7 @@ module tb_ifft64_radix2_top();
         cnt_test_case = 10'd0;
         cnt_cycle = 5'd0;
     end
+
     always @(negedge clk) begin
 	    if (start_check) begin
             ifft_out0_re_check[cnt_test_case*32+cnt_cycle] = ifft_out0_re;
@@ -188,6 +189,7 @@ module tb_ifft64_radix2_top();
             ifft_out1_re_check[cnt_test_case*32+cnt_cycle] = ifft_out1_re;
             ifft_out1_im_check[cnt_test_case*32+cnt_cycle] = ifft_out1_im;
             cnt_cycle = cnt_cycle + 5'd1;
+
             if (cnt_cycle == 5'd0) begin
                 cnt_test_case = cnt_test_case + 10'd1;
             end
