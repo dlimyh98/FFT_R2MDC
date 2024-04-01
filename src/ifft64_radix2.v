@@ -122,12 +122,16 @@ module ifft64_radix2
 
 /************************************* LAYER 2 *************************************/
     // Commutator
-    localparam L1_L2_delay_required = 15;
+    localparam L1_L2_delay_cycles = 15;
+    reg [15:0] delay_latch_bef_cm2_re [0:L1_L2_delay_cycles];
+    reg [15:0] delay_latch_bef_cm2_im [0:L1_L2_delay_cycles];
+    reg [15:0] delay_latch_aft_cm2_re [0:L1_L2_delay_cycles];
+    reg [15:0] delay_latch_aft_cm2_im [0:L1_L2_delay_cycles];
 
     wire [15:0] cm2_in0_re;
     wire [15:0] cm2_in0_im;
-    wire [15:0] cm2_in1_re;
-    wire [15:0] cm2_in1_im;
+    reg [15:0] cm2_in1_re;
+    reg [15:0] cm2_in1_im;
     wire [15:0] cm2_out0_re;
     wire [15:0] cm2_out0_im;
     wire [15:0] cm2_out1_re;
@@ -135,10 +139,22 @@ module ifft64_radix2
 
     assign cm2_in0_re = bf1_out0_re;
     assign cm2_in0_im = bf1_out0_im;
-    assign cm2_in1_re = (cntr_IFFT_input_pairs >= L1_L2_delay_required) ?    // Delay input to Commutator
-                        (bf1_out1_re) : (16'bx);
-    assign cm2_in1_im = (cntr_IFFT_input_pairs >= L1_L2_delay_required) ?    // Delay input to Commutator
-                        (bf1_out1_im) : (16'bx);
+
+    // Delay before commutator
+    always @ (posedge CLK) begin
+        delay_latch_bef_cm2_re[cntr_IFFT_input_pairs] <= bf1_out1_re;
+        delay_latch_bef_cm2_im[cntr_IFFT_input_pairs] <= bf1_out1_im;
+
+        if ((cntr_IFFT_input_pairs >= L1_L2_delay_cycles)
+            && (cntr_IFFT_input_pairs <= CNTR_MAX_VALUE-1)) begin
+                cm2_in1_re <= delay_latch_bef_cm2_re[cntr_IFFT_input_pairs-L1_L2_delay_cycles];
+                cm2_in1_im <= delay_latch_bef_cm2_im[cntr_IFFT_input_pairs-L1_L2_delay_cycles];
+        end
+        else begin
+            cm2_in1_re <= 16'bx;
+            cm2_in1_im <= 16'bx;
+        end
+    end
 
     commutator_radix2 Commutator2 (.in_0_re(cm2_in0_re),
                                    .in_0_im(cm2_in0_im),
@@ -161,8 +177,8 @@ module ifft64_radix2
     assign twiddle2_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel2)*NUM_BITS_PER_INPUT)+:15];
         
     // Butterfly Unit (with Twiddle Factor)
-    wire [15:0] bf2_in0_re;
-    wire [15:0] bf2_in0_im;
+    reg [15:0] bf2_in0_re;
+    reg [15:0] bf2_in0_im;
     wire [15:0] bf2_in1_re;
     wire [15:0] bf2_in1_im;
     wire [15:0] bf2_out0_re;
@@ -170,13 +186,24 @@ module ifft64_radix2
     wire [15:0] bf2_out1_re;
     wire [15:0] bf2_out1_im;
 
-    // Delay 1st path after output from commutator
-    assign bf2_in0_re = (cntr_IFFT_input_pairs >= L1_L2_delay_required) ?   // Delay output from Commutator
-                         (cm2_out0_re) : (16'bx);
-    assign bf2_in0_im = (cntr_IFFT_input_pairs >= L1_L2_delay_required) ?   // Delay output from Commutator
-                         (cm2_out0_im) : (16'bx);
     assign bf2_in1_re = cm2_out1_re;
     assign bf2_in1_im = cm2_out1_im;
+
+    // Delay after commutator
+    always @ (posedge CLK) begin
+        delay_latch_aft_cm2_re[cntr_IFFT_input_pairs] <= cm2_out0_re;
+        delay_latch_aft_cm2_im[cntr_IFFT_input_pairs] <= cm2_out0_im;
+
+        if ((cntr_IFFT_input_pairs >= L1_L2_delay_cycles)
+            && (cntr_IFFT_input_pairs <= CNTR_MAX_VALUE-1)) begin
+                bf2_in0_re <= delay_latch_aft_cm2_re[cntr_IFFT_input_pairs-L1_L2_delay_cycles];
+                bf2_in0_im <= delay_latch_aft_cm2_im[cntr_IFFT_input_pairs-L1_L2_delay_cycles];
+        end
+        else begin
+            bf2_in0_re <= 16'bx;
+            bf2_in0_im <= 16'bx;
+        end
+    end
 
     bf_radix2 BF2 (.A_re(bf2_in0_re),
                   .A_im(bf2_in0_im),
