@@ -64,8 +64,12 @@ module ifft64_radix2
 
     localparam L1_L2_DELAY = 16;
     localparam L2_L3_DELAY = 8;
+    localparam L3_L4_DELAY = 4;
+
     localparam L1_L2_DELAY_BEFORE_SAVING = 0;
     localparam L2_L3_DELAY_BEFORE_SAVING = 16;
+    localparam L3_L4_DELAY_BEFORE_SAVING = 24;
+
 
 /************************************* INPUT MUX *************************************/
     wire [15:0] bf1_in0_re;
@@ -292,8 +296,87 @@ module ifft64_radix2
                   .Y1_im(bf3_out1_im));
 
 
-
 /************************************* LAYER 4 *************************************/
+    // Pre-Delay to Commutator
+    wire [15:0] cm4_in0_re;
+    wire [15:0] cm4_in0_im;
+    wire [15:0] cm4_in1_re;
+    wire [15:0] cm4_in1_im;
+    wire [15:0] cm4_out0_re;
+    wire [15:0] cm4_out0_im;
+    wire [15:0] cm4_out1_re;
+    wire [15:0] cm4_out1_im;
+
+    predelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY + L2_L3_DELAY + L3_L4_DELAY - 1),     // 27
+                          .DELAY_BEFORE_SAVING(L3_L4_DELAY_BEFORE_SAVING),                // 24
+                          .NUM_INPUTS_PER_PATH(32))
+    PreDelay_Commutator4 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .bf_out0_re(bf3_out0_re),
+                          .bf_out0_im(bf3_out0_im),
+                          .bf_out1_re(bf3_out1_re),
+                          .bf_out1_im(bf3_out1_im),
+                          .cm_in0_re(cm4_in0_re),
+                          .cm_in0_im(cm4_in0_im),
+                          .cm_in1_re(cm4_in1_re),
+                          .cm_in1_im(cm4_in1_im));
+
+    // Commutator
+    commutator_radix2 Commutator4 (.in_0_re(cm4_in0_re),
+                                   .in_0_im(cm4_in0_im),
+                                   .in_1_re(cm4_in1_re),
+                                   .in_1_im(cm4_in1_im),
+                                   .pattern(pattern4),
+                                   .out_0_re(cm4_out0_re),
+                                   .out_0_im(cm4_out0_im),
+                                   .out_1_re(cm4_out1_re),
+                                   .out_1_im(cm4_out1_im));
+
+    // Post-Delay Commutator
+    wire [15:0] bf4_in0_re;
+    wire [15:0] bf4_in0_im;
+    wire [15:0] bf4_in1_re;
+    wire [15:0] bf4_in1_im;
+    wire [15:0] bf4_out0_re;
+    wire [15:0] bf4_out0_im;
+    wire [15:0] bf4_out1_re;
+    wire [15:0] bf4_out1_im;
+
+    postdelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY + L2_L3_DELAY + L3_L4_DELAY - 1),  // 27
+                           .DELAY_BEFORE_SAVING(L3_L4_DELAY_BEFORE_SAVING),             // 24
+                           .NUM_INPUTS_PER_PATH(32))
+    PostDelay_Commutator4 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .cm_out0_re(cm4_out0_re),
+                          .cm_out0_im(cm4_out0_im),
+                          .cm_out1_re(cm4_out1_re),
+                          .cm_out1_im(cm4_out1_im),
+                          .bf_in0_re(bf4_in0_re),
+                          .bf_in0_im(bf4_in0_im),
+                          .bf_in1_re(bf4_in1_re),
+                          .bf_in1_im(bf4_in1_im));
+
+    // Twiddle MUX4 (Choose between W0,W8,W16,W24)
+    wire [15:0] twiddle4_re;
+    wire [15:0] twiddle4_im;
+
+    // Selection Signal: [4:0] twiddle_sel4 (Available range is 0,8,16,24)
+    // Input: 512 bits; (twiddle_lut_re, twiddle_lut_im)
+    // Output: 16 bits; (twiddle4_re, twiddle4_im)
+    assign twiddle4_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel4)*NUM_BITS_PER_INPUT)+:15];
+    assign twiddle4_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel4)*NUM_BITS_PER_INPUT)+:15];
+
+    // Butterfly Unit (with Twiddle Factor)
+    bf_radix2 BF4 (.A_re(bf4_in0_re),
+                  .A_im(bf4_in0_im),
+                  .B_re(bf4_in1_re),
+                  .B_im(bf4_in1_im),
+                  .W_re(twiddle4_re),
+                  .W_im(twiddle4_im),
+                  .Y0_re(bf4_out0_re),
+                  .Y0_im(bf4_out0_im),
+                  .Y1_re(bf4_out1_re),
+                  .Y1_im(bf4_out1_im));
 
 
 /************************************* LAYER 5 *************************************/
