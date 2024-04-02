@@ -45,8 +45,10 @@
                 - i.e twiddle_sel2 == 5'b0; Choose [511:496] of twiddle_lut_re and twiddle_lut_im (W0)
                 - i.e twiddle_sel2 == 5'b2; Choose [479:464] of twiddle_lut_re and twiddle_lut_im (W2)
 
+
 7. Commutator Unit
     - Swaps INPUTS (cm_in0, cm_in1)
+
 
 8. BFU Addition
     - Signed fixed point representation = <1,7,8> using 2s complement
@@ -57,23 +59,23 @@
         - We have an overflow.
 
 
-9. BFU Verification (Up till BFU2 inputs)
-    - BankAddr = 0
+9. BFU Verification (Layer 1 and Layer 2)
+    - testCase = 0
         BF1 OUTPUTS; [ (bf1_out0_re, bf1_out0_im) , (bf1_out1_re, bf1_out1_im) ]
-            0th Input  : (64636, 64577) , (640, 65361)  ;0,32
-            1st Input  : (65377,912) , (63926,725)      ;1,33
-            2nd Input  : (64266,63597) , (64674,333)    ;2,34
-            3rd Input  : (792,64540) , (64731,64931)    ;15,47
-            6th Input  : (127,63492) , (243,65181)      ;6,38
-            10th Input : (42,65235), (2554,1017)        ;10,42
-            14th Input : (945,65028) , (63764,64993)    ;14,46
-            16th Input : (64780,63907) , (791,1028)     ;16,48
-            17th Input : (230,64463) , (44665,33560)    ;17,49
-            18th Input : (63632,1896) , (49122,52542)   ;18,50
-            22nd Input : (63880,65500) , (29743,38120)  ;22,54
-            26th Input : (118,696) , (27681,2495)       ;26,58
-            30th Input : (88,65234) , (43355,52298)     ;30,62
-            31st Input : (234,310) , (8894,60208)       ;31,63
+            0th Output  : (64636, 64577) , (640, 65361)  ;0,32
+            1st Output  : (65377,912) , (63926,725)      ;1,33
+            2nd Output  : (64266,63597) , (64674,333)    ;2,34
+            3rd Output  : (792,64540) , (64731,64931)    ;15,47
+            6th Output  : (127,63492) , (243,65181)      ;6,38
+            10th Output : (42,65235), (2554,1017)        ;10,42
+            14th Output : (945,65028) , (63764,64993)    ;14,46
+            16th Output : (64780,63907) , (791,1028)     ;16,48
+            17th Output : (230,64463) , (44665,33560)    ;17,49
+            18th Output : (63632,1896) , (49122,52542)   ;18,50
+            22nd Output : (63880,65500) , (29743,38120)  ;22,54
+            26th Output : (118,696) , (27681,2495)       ;26,58
+            30th Output : (88,65234) , (43355,52298)     ;30,62
+            31st Output : (234,310) , (8894,60208)       ;31,63
 
         BF2 INPUTS; [ (bf2_in0_re, bf2_in0_im) , (bf2_in1_re, bf2_in1_im) ]
             0th Input   : (64636, 64577) , (64780,63907)  ;0,16
@@ -83,19 +85,49 @@
             26th Input  : (2554,1017) , (27681,2495)      ;42,58
 
 
-    - BankAddr = 1
+    - testCase = 1
         BF1 OUTPUTS; [ (bf1_out0_re, bf1_out0_im) , (bf1_out1_re, bf1_out1_im) ]
-            0th Input  : (986,64110) , (1500,65508)  ;0,32
-            6th Input  : (572,65429) , (882,64787)   ;6,38
-            16th Input : (412,1108) , (65044,65046)  ;16,48
-            22nd Input : (2089,1047) , (11164,31970) ;22,54
+            0th Output  : (986,64110) , (1500,65508)  ;0,32
+            6th Output  : (572,65429) , (882,64787)   ;6,38
+            16th Output : (412,1108) , (65044,65046)  ;16,48
+            22nd Output : (2089,1047) , (11164,31970) ;22,54
 
         BF2 INPUTS; [ (bf2_in0_re, bf2_in0_im) , (bf2_in1_re, bf2_in1_im) ]
             0th Input  : (986,64110) , (412,1108)     ;0,16
             22nd Input : (882,64787) , (11164,31970)  ;38,54
 
 
-10. How does the testbench work?
+10. BFU Verification (Layer 2 and Layer 3)
+    - testCase = 0
+        BF2 OUTPUTS; [ (bf2_out0_re, bf2_out0_im) , (bf2_out1_re, bf2_out1_im) ]
+            0th Output  : (63880,62948) , (65392,670)    ;0,16
+            8th Output  : (1296,597) , (1755,65220)      ;8,24
+            17th Output : (43055,34285) , (12625,35748)  ;33,49
+            19th Output : (56434,7291) , (10140,62535)   ;35,51
+            25th Output : (30736,39840) , (41970,39465)  ;41,57
+            27th Output : (17877,8452) , (53247,30024)   ;43,59
+
+        BF3 INPUTS; [ (bf3_in0_re, bf3_in0_im) , (bf3_in1_re, bf3_in1_im) ]
+            0th Input  : (63380,62948) , (1296,597)      ;0,8
+            17th Input : (43055,34285) , (30736,39840)   ;33,41
+            27th Input : (10140,62535) , (53247,30024)   ;51,59
+
+    - testCase = 1
+        BF2 OUTPUTS; [ (bf2_out0_re, bf2_out0_im) , (bf2_out1_re, bf2_out1_im) ]
+            0th Output  : (1398,65218) , (574,63002)    ;0,16
+            8th Output  : (64067,64910) , (65392,63411) ;8,24
+            17th Output : (9767,44660) , (52841,18743)  ;33,49
+            19th Output : (18696,8066) , (52971,50984)  ;35,51
+            25th Output : (31450,17442) , (58311,7693)  ;41,57
+            27th Output : (48741,28615) , (52427,13727) ;43,59
+
+        BF3 INPUTS; [ (bf3_in0_re, bf3_in0_im) , (bf3_in1_re, bf3_in1_im) ]
+            0th Input  : (1398,65218) , (64067,64910)    ;0,8
+            17th Input : (9767,44660) , (31450,17442)    ;33,41
+            27th Input : (52971,50984) , (52427,13727)   ;51,59
+
+
+11. How does the testbench work?
     - cnt_cal is still incrementing even in State CAL
     - We wait for cnt_cal == 32 before transitioning to CAL stage.
         - This means we are waiting for this first valid output to show up at ifft_out

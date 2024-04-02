@@ -65,9 +65,9 @@ always @ (posedge CLK) begin
         // begin outputting values for (x+1)th testcase. Therefore, dont disable the signals below
         /*
         if (FF_index_bef_cm == NUM_INPUTS_PER_PATH-1) begin
-            //begin_FF_output_bef_cm <= 1'b0;    // Done outputting all values. Can be overwritten below.
-            //FF_index_bef_cm <= 5'bX;
-            //enable_FF_saving_bef_cm <= 1'b0;
+            begin_FF_output_bef_cm <= 1'b0;    // Done outputting all values.
+            FF_index_bef_cm <= 5'bX;           
+            enable_FF_saving_bef_cm <= 1'b0;
         end
         */
         
