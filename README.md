@@ -126,8 +126,43 @@
             17th Input : (9767,44660) , (31450,17442)    ;33,41
             27th Input : (52971,50984) , (52427,13727)   ;51,59
 
+11. BFU Verification (Layer 3 and Layer 4)
+    - testCase = 0
+        BF3 OUTPUTS; [ (bf3_out0_re, bf3_out0_im) , (bf3_out1_re, bf3_out1_im) ]
+            0th Output  : (65176,63545) , (62584,62351)    ;0,8
+            1st Output  : (64688,1695) , (1676,64051)      ;1,9
+            4th Output  : (63527,63237) , (64375,65511)    ;4,12
+            5th Output  : (64046,2307) , (54382,58679)     ;5,13
+            16th Output : (48762,23936) , (19636,43306)    ;32,40
+            20th Output : (42493,51904) , (21634,41243)    ;36,44
 
-11. How does the testbench work?
+        BF4 INPUTS; [ (bf4_in0_re, bf4_in0_im) , (bf4_in1_re, bf4_in1_im) ]
+            0th Input  : (65176,63545) , (63527,63237)     ;0,4
+            5th Input : (1676,64051) , (54382,58679)       ;9,13
+            20th Input : (19636,43306) , (21634,41243)     ;40,44
+
+    - testCase = 1
+        BF3 OUTPUTS; [ (bf3_out0_re, bf3_out0_im) , (bf3_out1_re, bf3_out1_im) ]
+            0th Output  : (65465,64592) , (2867,308)    ;0,8
+            4th Output  : (1104,254) , (64836,1020)     ;4,12
+            16th Output : (18598,47480) , (48954,17020) ;32,40
+            20th Output : (2255,37271) , (20243,30003)  ;36,44
+
+        BF4 INPUTS; [ (bf4_in0_re, bf4_in0_im) , (bf4_in1_re, bf4_in1_im) ]
+            0th Input  : (65465,64592) , (1104,254)     ;0,4
+            20th Input : (48954,17020) , (20243,30003)  ;40,44
+
+    - testCase = 2
+        BF3 OUTPUTS; [ (bf3_out0_re, bf3_out0_im) , (bf3_out1_re, bf3_out1_im) ]
+            16th Output : (59985,7999) , (7831,58735)    ;32,40
+            20th Output : (28280,11220) , (23598,30456)  ;36,44
+
+        BF4 INPUTS; [ (bf4_in0_re, bf4_in0_im) , (bf4_in1_re, bf4_in1_im) ]
+            20th Input : (7831,58735) , (23598,30456)  ;40,44
+
+
+
+12. How does the testbench work?
     - cnt_cal is still incrementing even in State CAL
     - We wait for cnt_cal == 32 before transitioning to CAL stage.
         - This means we are waiting for this first valid output to show up at ifft_out

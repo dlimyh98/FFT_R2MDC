@@ -47,8 +47,8 @@ always @ (posedge CLK) begin
     end
     else begin
         // Cntr overflowed, or it's writing garbage data (that will be overwritten)
-        delay_FF_bef_cm_re[cntr_IFFT_input_pairs + DELAY_BEFORE_SAVING] <= bf_out1_re;
-        delay_FF_bef_cm_im[cntr_IFFT_input_pairs + DELAY_BEFORE_SAVING] <= bf_out1_im;
+        delay_FF_bef_cm_re[cntr_IFFT_input_pairs + (NUM_INPUTS_PER_PATH-DELAY_BEFORE_SAVING)] <= bf_out1_re;
+        delay_FF_bef_cm_im[cntr_IFFT_input_pairs + (NUM_INPUTS_PER_PATH-DELAY_BEFORE_SAVING)] <= bf_out1_im;
     end
 
     // When we are done outputting values for xth testCase, on the next clockCycle we will need to

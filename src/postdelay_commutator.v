@@ -46,8 +46,8 @@ always @ (posedge CLK) begin
     end
     else begin
         // Cntr overflowed, or it's writing garbage data (that will be overwritten)
-        delay_FF_aft_cm_re[cntr_IFFT_input_pairs + DELAY_BEFORE_SAVING] <= cm_out0_re;
-        delay_FF_aft_cm_im[cntr_IFFT_input_pairs + DELAY_BEFORE_SAVING] <= cm_out0_im;
+        delay_FF_aft_cm_re[cntr_IFFT_input_pairs + (NUM_INPUTS_PER_PATH-DELAY_BEFORE_SAVING)] <= cm_out0_re;
+        delay_FF_aft_cm_im[cntr_IFFT_input_pairs + (NUM_INPUTS_PER_PATH-DELAY_BEFORE_SAVING)] <= cm_out0_im;
     end
 
     if (cntr_IFFT_input_pairs >= DELAY_CYCLES-1) begin
