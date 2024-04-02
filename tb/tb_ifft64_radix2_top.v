@@ -173,7 +173,7 @@ module tb_ifft64_radix2_top();
     end
 
 
-    /**************************** CHECK OUTPUT ****************************/
+    /**************************** RECEIVE OUTPUT ****************************/
     reg [9:0] cnt_test_case;
     reg [4:0] cnt_cycle;
 

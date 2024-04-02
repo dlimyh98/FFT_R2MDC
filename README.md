@@ -32,7 +32,7 @@
 6. IFFT Control Unit
     - RECALL: Each butterfly unit needs 32 cycles to fully process ONE testcase (one testcase consists of 64 inputs evenly split through in0 and in1)
         - Therefore, we need to wait 32 cycles before we can feed inputs for the next testcase into BF1 (which will then propagate down to BF2...BF6)
-    - The IFFT Pipeline needs to wait 32 cycles before the FIRST valid output of the FIRST testcase shows up at ifft_out0 and ifft_out1
+    - The IFFT Pipeline needs to wait 31 cycles before the FIRST valid output of the FIRST testcase shows up at ifft_out0 and ifft_out1
         - You can see this by tracking the numDelays along a CERTAIN path
     - twiddle MUX unit
         - INPUTS: [4:0]twiddle_sel, [511:0]twiddle_lut_re, [511:0]twiddle_lut_im
@@ -58,24 +58,46 @@
 
 
 9. BFU Verification (Up till BFU2 inputs)
-    BF1 OUTPUTS; [ (bf1_out0_re, bf1_out0_im) , (bf1_out1_re, bf1_out1_im) ]
-        0th Input  :  (64636, 64577) , (640, 65361) ;0,32
-        1st Input   : (65377,912) , (63926,725)      ;1,33
-        2nd Input  : (64266,63597) , (64674,333)  ;2,34
-        3rd Input   : (792,64540) , (64731,64931)   ;15,47
-        6th Input : (127,63492) , (243,65181) ; 6,38
-        10th Input : (42,65235), (2554,1017) ; 10,42
-        14th Input : (945,65028) , (63764,64993)  ;14,46
-        18th Input : (63632,1896) , (49122,52542) ;18,50
-        22nd Input : (63880,65500) , (29743,38120) ; 22,54
-        26th Input : (118,696) , (27681,2495) ; 26,58
-        30th Input : (88,65234) , (43355,52298) ;30,62
-        31st Input : (234,310) , (8894,60208) ; 31,63
+    - BankAddr = 0
+        BF1 OUTPUTS; [ (bf1_out0_re, bf1_out0_im) , (bf1_out1_re, bf1_out1_im) ]
+            0th Input  : (64636, 64577) , (640, 65361)  ;0,32
+            1st Input  : (65377,912) , (63926,725)      ;1,33
+            2nd Input  : (64266,63597) , (64674,333)    ;2,34
+            3rd Input  : (792,64540) , (64731,64931)    ;15,47
+            6th Input  : (127,63492) , (243,65181)      ;6,38
+            10th Input : (42,65235), (2554,1017)        ;10,42
+            14th Input : (945,65028) , (63764,64993)    ;14,46
+            16th Input : (64780,63907) , (791,1028)     ;16,48
+            17th Input : (230,64463) , (44665,33560)    ;17,49
+            18th Input : (63632,1896) , (49122,52542)   ;18,50
+            22nd Input : (63880,65500) , (29743,38120)  ;22,54
+            26th Input : (118,696) , (27681,2495)       ;26,58
+            30th Input : (88,65234) , (43355,52298)     ;30,62
+            31st Input : (234,310) , (8894,60208)       ;31,63
+
+        BF2 INPUTS; [ (bf2_in0_re, bf2_in0_im) , (bf2_in1_re, bf2_in1_im) ]
+            0th Input   : (64636, 64577) , (64780,63907)  ;0,16
+            1st Input   : (65377,912) , (230,64463)       ;1,17
+            18th Input  : (64674,333) , (49122,52542)     ;34,50
+            22nd Input  : (243,65181) , (29743,38120)     ;38,54
+            26th Input  : (2554,1017) , (27681,2495)      ;42,58
 
 
-    BF2 INPUTS; [ (bf2_in0_re, bf2_in0_im) , (bf2_in1_re, bf2_in1_im) ]
-        0th Input   : (64636, 64577) , (64780,63907); 0,16
-        1st Input   : (65377,912) , (230,64463)    ; 1,17
-        18th Input: (64674,333) , (49122,52542) ; 34,50
-        22nd Input : (243,65181) , (29743,38120) ; 38:54
-        26th Input : (2554,1017) , (27681,2495) ; 42,58
+    - BankAddr = 1
+        BF1 OUTPUTS; [ (bf1_out0_re, bf1_out0_im) , (bf1_out1_re, bf1_out1_im) ]
+            0th Input  : (986,64110) , (1500,65508)  ;0,32
+            6th Input  : (572,65429) , (882,64787)   ;6,38
+            16th Input : (412,1108) , (65044,65046)  ;16,48
+            22nd Input : (2089,1047) , (11164,31970) ;22,54
+
+        BF2 INPUTS; [ (bf2_in0_re, bf2_in0_im) , (bf2_in1_re, bf2_in1_im) ]
+            0th Input  : (986,64110) , (412,1108)     ;0,16
+            22nd Input : (882,64787) , (11164,31970)  ;38,54
+
+
+10. How does the testbench work?
+    - cnt_cal is still incrementing even in State CAL
+    - We wait for cnt_cal == 32 before transitioning to CAL stage.
+        - This means we are waiting for this first valid output to show up at ifft_out
+    - IFFT pipeline requires 31 cycles for valid output to show up
+        - Therefore, we have to CHANGE to CAL stage by Cycle31

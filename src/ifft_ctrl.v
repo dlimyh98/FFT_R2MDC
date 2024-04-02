@@ -5,7 +5,7 @@
 
 // Output ports
 // start_check     -COMB; signal to testbench, activated when the first effective result is generated at the output of the IFFT pipeline (active high)
-// Bank_Addr       -SYNC, to select test case (10 bits)
+// Bank_Addr       -SYNC, to provide DUT inputs (ifft_in0 and ifft_in1) according to testcase (10 bits)
 // twiddle_sel1    -COMB control signal, to select twiddle factors for the 1st layer in the 64IFFT pipeline
 // twiddle_sel2    -COMB control signal, to select twiddle factors for the 2nd layer in the 64IFFT pipeline
 // twiddle_sel3    -COMB control signal, to select twiddle factors for the 3rd layer in the 64IFFT pipeline
@@ -39,18 +39,17 @@ module ifft_ctrl
     );
     
     localparam LAST_TEST_CASE = 10'd1000;
-    localparam IFFT_PIPELINE_LATENCY = 5'd31;
+    localparam INIT_LATENCY = 5'd31;
 
     // State definitions
     localparam IDLE = 3'd0;
-    localparam FFT_PIPELINE = 3'd1;
-    localparam VERIFICATION = 3'd2;
+    localparam INIT = 3'd1;
+    localparam CAL = 3'd2;
     localparam DONE = 3'd3;
     localparam RESET = 3'd4;
 
     reg [2:0] current_State = IDLE;
     reg [2:0] next_State = IDLE;
-    reg [9:0] cnt_testcases = 10'd0;
 
     // We can use cntr_IFFT_input_pairs as twiddle_layer1_cntr
     localparam LAYER_TWO_OVERFLOW = 15;
@@ -78,7 +77,6 @@ module ifft_ctrl
             twiddle_layer3_cntr <= 0;
             twiddle_layer4_cntr <= 0;
             twiddle_layer5_cntr <= 0;
-            cnt_testcases <= 0;
 
             // Reset all synchronous output signals
             Bank_Addr <= 0;
@@ -92,7 +90,7 @@ module ifft_ctrl
         else begin
             current_State <= next_State;
 
-            if (current_State == FFT_PIPELINE) begin
+            if (current_State == INIT || current_State == CAL) begin
                 // BFU1: (0,32),(1,33),(2,34),...,(31,63)
                 // BFU2: (0,16),(1,17),...,(15,31) , (32,48),(33,49),...,(47,63)
                 // commutator2: Active between clockCycles 16-31. Flips 16 pairs of inputs; (16,32),(17,33),(18,34),...,(31,47)
@@ -114,17 +112,19 @@ module ifft_ctrl
                 twiddle_layer3_cntr <= twiddle_layer3_cntr + 1;
                 twiddle_layer4_cntr <= twiddle_layer4_cntr + 1;
                 twiddle_layer5_cntr <= twiddle_layer5_cntr + 1;
-            end
-            else if (current_State == VERIFICATION) begin
-                Bank_Addr <= Bank_Addr + 1;
-                cnt_testcases <= cnt_testcases + 1;
+
+                // We have provided all 64 inputs (32 into ifft_in0, 32 into ifft_in1) into IFFT Pipeline.
+                // Move on to next testCase of DUT inputs
+                if (cntr_IFFT_input_pairs == INIT_LATENCY) begin
+                    Bank_Addr <= Bank_Addr + 1;
+                end
             end
         end
     end
 
 
     /************************************ COMBINATIONAL NEXT-STATE GENERATION ************************************/
-    always @ (current_State, Start, cntr_IFFT_input_pairs, cnt_testcases) begin
+    always @ (current_State, Start, cntr_IFFT_input_pairs, Bank_Addr) begin
         next_State = 2'bx;
         
         case (current_State)
@@ -133,18 +133,18 @@ module ifft_ctrl
             end
 
             IDLE: begin
-                if (Start) next_State = FFT_PIPELINE;
+                if (Start) next_State = INIT;
                 else next_State = IDLE;
             end
 
-            FFT_PIPELINE: begin
-                if (cntr_IFFT_input_pairs == IFFT_PIPELINE_LATENCY) next_State = VERIFICATION;
-                else next_State = FFT_PIPELINE;
+            INIT: begin
+                if (cntr_IFFT_input_pairs == INIT_LATENCY-1) next_State = CAL;
+                else next_State = INIT;
             end
 
-            VERIFICATION: begin
-                if (cnt_testcases == LAST_TEST_CASE) next_State = DONE;
-                else next_State = VERIFICATION;
+            CAL: begin
+                if (Bank_Addr == LAST_TEST_CASE) next_State = DONE;
+                else next_State = CAL;
             end
 
             DONE: begin
@@ -190,8 +190,8 @@ module ifft_ctrl
             //           "SECOND HALF" -> (in32,in48), (in33,in49), ... , (in47,in63)]
 
             // We stay in this state for exactly 32 cycles (numCycles required for FIRST valid output of FIRST testCase to show up at ifft_out0 and ifft_out1)
-            FFT_PIPELINE: begin
-                Start_Check = 0;
+            INIT: begin
+                Start_Check = 1'b0;
 
                 // twiddle_sel1: Picks between W0(in0 & in32), W1(in1 & in33), ... , W31(in31 & in63)
                 // twiddle_sel2: Picks between W0(in0 & in16, in32 & in48), W2(in1 & in17, in33 & in49), ... , W30(in15 & in31, in47 & in63)
@@ -206,8 +206,14 @@ module ifft_ctrl
                 twiddle_sel5 = twiddle_layer5_cntr*16;
             end
 
-            VERIFICATION: begin
+            CAL: begin
                 Start_Check = 1'b1;
+
+                twiddle_sel1 = cntr_IFFT_input_pairs;
+                twiddle_sel2 = twiddle_layer2_cntr*2;
+                twiddle_sel3 = twiddle_layer3_cntr*4;
+                twiddle_sel4 = twiddle_layer4_cntr*8;
+                twiddle_sel5 = twiddle_layer5_cntr*16;
             end
 
             /*

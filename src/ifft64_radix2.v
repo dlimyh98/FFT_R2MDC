@@ -62,6 +62,11 @@ module ifft64_radix2
     localparam NUM_BITS_PER_INPUT = 16;
     localparam NUM_INPUTS_PER_PATH = 32;
 
+    localparam L1_L2_DELAY = 16;
+    localparam L2_L3_DELAY = 8;
+    localparam L1_L2_DELAY_BEFORE_SAVING = 0;
+    localparam L2_L3_DELAY_BEFORE_SAVING = 16;
+
 /************************************* INPUT MUX *************************************/
     wire [15:0] bf1_in0_re;
     wire [15:0] bf1_in0_im;
@@ -121,6 +126,7 @@ module ifft64_radix2
 
 
 /************************************* LAYER 2 *************************************/
+    // Pre-Delay to Commutator
     wire [15:0] cm2_in0_re;
     wire [15:0] cm2_in0_im;
     wire [15:0] cm2_in1_re;
@@ -129,10 +135,11 @@ module ifft64_radix2
     wire [15:0] cm2_out0_im;
     wire [15:0] cm2_out1_re;
     wire [15:0] cm2_out1_im;
+    wire predelay_cm2_ENABLE;
 
-    // Pre-Delay to Commutator
-    predelay_commutator #(.DELAY_CYCLES(15),
-                         .NUM_INPUTS_PER_PATH(32))
+    predelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY-1),                     // 15
+                          .DELAY_BEFORE_SAVING(L1_L2_DELAY_BEFORE_SAVING),  // 0
+                          .NUM_INPUTS_PER_PATH(NUM_INPUTS_PER_PATH))
     PreDelay_Commutator2 (.CLK(CLK),
                           .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
                           .bf_out0_re(bf1_out0_re),
@@ -155,6 +162,7 @@ module ifft64_radix2
                                    .out_1_re(cm2_out1_re),
                                    .out_1_im(cm2_out1_im));
 
+    // Post-Delay Commutator
     wire [15:0] bf2_in0_re;
     wire [15:0] bf2_in0_im;
     wire [15:0] bf2_in1_re;
@@ -164,9 +172,9 @@ module ifft64_radix2
     wire [15:0] bf2_out1_re;
     wire [15:0] bf2_out1_im;
 
-    // Post-Delay Commutator
-    postdelay_commutator #(.DELAY_CYCLES(15),
-                         .NUM_INPUTS_PER_PATH(32))
+    postdelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY-1),                        // 15
+                           .DELAY_BEFORE_SAVING(L1_L2_DELAY_BEFORE_SAVING),     // 0
+                           .NUM_INPUTS_PER_PATH(NUM_INPUTS_PER_PATH))
     PostDelay_Commutator2 (.CLK(CLK),
                           .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
                           .cm_out0_re(cm2_out0_re),
@@ -202,6 +210,87 @@ module ifft64_radix2
 
 
 /************************************* LAYER 3 *************************************/
+    // Pre-Delay to Commutator
+    wire [15:0] cm3_in0_re;
+    wire [15:0] cm3_in0_im;
+    wire [15:0] cm3_in1_re;
+    wire [15:0] cm3_in1_im;
+    wire [15:0] cm3_out0_re;
+    wire [15:0] cm3_out0_im;
+    wire [15:0] cm3_out1_re;
+    wire [15:0] cm3_out1_im;
+
+    predelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY + L2_L3_DELAY - 1),     // 23
+                          .DELAY_BEFORE_SAVING(L2_L3_DELAY_BEFORE_SAVING),  // 16
+                          .NUM_INPUTS_PER_PATH(32))
+    PreDelay_Commutator3 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .bf_out0_re(bf2_out0_re),
+                          .bf_out0_im(bf2_out0_im),
+                          .bf_out1_re(bf2_out1_re),
+                          .bf_out1_im(bf2_out1_im),
+                          .cm_in0_re(cm3_in0_re),
+                          .cm_in0_im(cm3_in0_im),
+                          .cm_in1_re(cm3_in1_re),
+                          .cm_in1_im(cm3_in1_im));
+
+    // Commutator
+    commutator_radix2 Commutator3 (.in_0_re(cm3_in0_re),
+                                   .in_0_im(cm3_in0_im),
+                                   .in_1_re(cm3_in1_re),
+                                   .in_1_im(cm3_in1_im),
+                                   .pattern(pattern3),
+                                   .out_0_re(cm3_out0_re),
+                                   .out_0_im(cm3_out0_im),
+                                   .out_1_re(cm3_out1_re),
+                                   .out_1_im(cm3_out1_im));
+
+    // Post-Delay Commutator
+    wire [15:0] bf3_in0_re;
+    wire [15:0] bf3_in0_im;
+    wire [15:0] bf3_in1_re;
+    wire [15:0] bf3_in1_im;
+    wire [15:0] bf3_out0_re;
+    wire [15:0] bf3_out0_im;
+    wire [15:0] bf3_out1_re;
+    wire [15:0] bf3_out1_im;
+
+    postdelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY + L2_L3_DELAY - 1),        // 23
+                           .DELAY_BEFORE_SAVING(L2_L3_DELAY_BEFORE_SAVING),     // 16
+                           .NUM_INPUTS_PER_PATH(32))
+    PostDelay_Commutator3 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .cm_out0_re(cm3_out0_re),
+                          .cm_out0_im(cm3_out0_im),
+                          .cm_out1_re(cm3_out1_re),
+                          .cm_out1_im(cm3_out1_im),
+                          .bf_in0_re(bf3_in0_re),
+                          .bf_in0_im(bf3_in0_im),
+                          .bf_in1_re(bf3_in1_re),
+                          .bf_in1_im(bf3_in1_im));
+
+    // Twiddle MUX3 (Choose between W0,W4,W8,...,W28)
+    wire [15:0] twiddle3_re;
+    wire [15:0] twiddle3_im;
+
+    // Selection Signal: [4:0] twiddle_sel3 (Available range is 0,4,8,...,28)
+    // Input: 512 bits; (twiddle_lut_re, twiddle_lut_im)
+    // Output: 16 bits; (twiddle3_re, twiddle3_im)
+    assign twiddle3_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel3)*NUM_BITS_PER_INPUT)+:15];
+    assign twiddle3_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel3)*NUM_BITS_PER_INPUT)+:15];
+
+    // Butterfly Unit (with Twiddle Factor)
+    bf_radix2 BF3 (.A_re(bf3_in0_re),
+                  .A_im(bf3_in0_im),
+                  .B_re(bf3_in1_re),
+                  .B_im(bf3_in1_im),
+                  .W_re(twiddle3_re),
+                  .W_im(twiddle3_im),
+                  .Y0_re(bf3_out0_re),
+                  .Y0_im(bf3_out0_im),
+                  .Y1_re(bf3_out1_re),
+                  .Y1_im(bf3_out1_im));
+
 
 
 /************************************* LAYER 4 *************************************/
