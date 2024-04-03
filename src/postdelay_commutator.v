@@ -23,45 +23,54 @@ assign bf_in1_re = cm_out1_re;
 assign bf_in1_im = cm_out1_im;
 
 
-// Delay 1st path after input to Commutator
-always @ (posedge CLK) begin
-    if (begin_FF_output_aft_cm) begin
-        bf_in0_re <= delay_FF_aft_cm_re[FF_index_aft_cm];
-        bf_in0_im <= delay_FF_aft_cm_im[FF_index_aft_cm];
-        FF_index_aft_cm <= FF_index_aft_cm + 1;
+if (DELAY_CYCLES != DELAY_BEFORE_SAVING) begin
+    // Delay 1st path after input to Commutator
+    always @ (posedge CLK) begin
+
+        if (begin_FF_output_aft_cm) begin
+            bf_in0_re <= delay_FF_aft_cm_re[FF_index_aft_cm];
+            bf_in0_im <= delay_FF_aft_cm_im[FF_index_aft_cm];
+            FF_index_aft_cm <= FF_index_aft_cm + 1;
+        end
+        else begin
+            bf_in0_re <= 16'bx;
+            bf_in0_im <= 16'bx;
+        end
     end
-    else begin
-        bf_in0_re <= 16'bx;
-        bf_in0_im <= 16'bx;
+
+    always @ (posedge CLK) begin
+        // Save the 32 values from cm_out0 into FF registers
+        if (cntr_IFFT_input_pairs >= DELAY_BEFORE_SAVING) begin
+            // Cntr hasn't overflowed
+            delay_FF_aft_cm_re[cntr_IFFT_input_pairs - DELAY_BEFORE_SAVING] <= cm_out0_re;
+            delay_FF_aft_cm_im[cntr_IFFT_input_pairs - DELAY_BEFORE_SAVING] <= cm_out0_im;
+        end
+        else begin
+            // Cntr overflowed, or it's writing garbage data (that will be overwritten)
+            delay_FF_aft_cm_re[cntr_IFFT_input_pairs + (NUM_INPUTS_PER_PATH-DELAY_BEFORE_SAVING)] <= cm_out0_re;
+            delay_FF_aft_cm_im[cntr_IFFT_input_pairs + (NUM_INPUTS_PER_PATH-DELAY_BEFORE_SAVING)] <= cm_out0_im;
+        end
+
+        if (cntr_IFFT_input_pairs >= DELAY_CYCLES-1) begin
+            // Signal to output saved values from FF (Begins two cycles from now)
+            begin_FF_output_aft_cm <= 1'b1;
+        end
+
+        /*
+        if (FF_index_aft_cm == NUM_INPUTS_PER_PATH-1) begin
+            begin_FF_output_aft_cm <= 1'b0;
+            FF_index_aft_cm <= 5'bX;
+            //enable_FF_saving_aft_cm <= 1'b0;
+        end
+        */
     end
 end
-
-
-always @ (posedge CLK) begin
-    // Save the 32 values from cm_out0 into FF registers
-    if (cntr_IFFT_input_pairs >= DELAY_BEFORE_SAVING) begin
-        // Cntr hasn't overflowed
-        delay_FF_aft_cm_re[cntr_IFFT_input_pairs - DELAY_BEFORE_SAVING] <= cm_out0_re;
-        delay_FF_aft_cm_im[cntr_IFFT_input_pairs - DELAY_BEFORE_SAVING] <= cm_out0_im;
+else begin
+    // No need to save into register. Just a simple FF delay will do
+    always @ (posedge CLK) begin
+        bf_in0_re <= cm_out0_re;
+        bf_in0_im <= cm_out0_im;
     end
-    else begin
-        // Cntr overflowed, or it's writing garbage data (that will be overwritten)
-        delay_FF_aft_cm_re[cntr_IFFT_input_pairs + (NUM_INPUTS_PER_PATH-DELAY_BEFORE_SAVING)] <= cm_out0_re;
-        delay_FF_aft_cm_im[cntr_IFFT_input_pairs + (NUM_INPUTS_PER_PATH-DELAY_BEFORE_SAVING)] <= cm_out0_im;
-    end
-
-    if (cntr_IFFT_input_pairs >= DELAY_CYCLES-1) begin
-        // Signal to output saved values from FF (Begins two cycles from now)
-        begin_FF_output_aft_cm <= 1'b1;
-    end
-
-    /*
-    if (FF_index_aft_cm == NUM_INPUTS_PER_PATH-1) begin
-        begin_FF_output_aft_cm <= 1'b0;
-        FF_index_aft_cm <= 5'bX;
-        //enable_FF_saving_aft_cm <= 1'b0;
-    end
-    */
 end
 
 endmodule

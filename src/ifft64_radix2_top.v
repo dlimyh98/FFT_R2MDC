@@ -62,7 +62,7 @@ ifft_ctrl IFFT_Ctrl (.CLK(CLK),
                      .pattern3(ctrl_pattern3),
                      .pattern4(ctrl_pattern4),
                      .pattern5(ctrl_pattern5),
-                     .pattern6(ctr_pattern6),
+                     .pattern6(ctrl_pattern6),
                      .cntr_IFFT_input_pairs(ctrl_cntr_IFFT_input_pairs));
 
 

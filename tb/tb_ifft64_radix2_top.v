@@ -68,6 +68,7 @@ module tb_ifft64_radix2_top();
         $readmemb("../ref/test_ifft_out1_reference_re_bin.txt",test_ifft_out1_reference_re_bin);
         $readmemb("../ref/test_ifft_out1_reference_im_bin.txt",test_ifft_out1_reference_im_bin);
         */
+
         $readmemb("test_twiddle_lut_re_bin.txt",test_twiddle_lut_re_bin);
         $readmemb("test_twiddle_lut_im_bin.txt",test_twiddle_lut_im_bin);
         $readmemb("test_ifft_in0_re_bin.txt",test_ifft_in0_re_bin);

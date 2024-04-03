@@ -65,10 +65,14 @@ module ifft64_radix2
     localparam L1_L2_DELAY = 16;
     localparam L2_L3_DELAY = 8;
     localparam L3_L4_DELAY = 4;
+    localparam L4_L5_DELAY = 2;
+    localparam L5_L6_DELAY = 1;
 
     localparam L1_L2_DELAY_BEFORE_SAVING = 0;
     localparam L2_L3_DELAY_BEFORE_SAVING = 16;
     localparam L3_L4_DELAY_BEFORE_SAVING = 24;
+    localparam L4_L5_DELAY_BEFORE_SAVING = 28;
+    localparam L5_L6_DELAY_BEFORE_SAVING = 30;
 
 
 /************************************* INPUT MUX *************************************/
@@ -139,7 +143,6 @@ module ifft64_radix2
     wire [15:0] cm2_out0_im;
     wire [15:0] cm2_out1_re;
     wire [15:0] cm2_out1_im;
-    wire predelay_cm2_ENABLE;
 
     predelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY-1),                     // 15
                           .DELAY_BEFORE_SAVING(L1_L2_DELAY_BEFORE_SAVING),  // 0
@@ -380,15 +383,162 @@ module ifft64_radix2
 
 
 /************************************* LAYER 5 *************************************/
+    // Pre-Delay to Commutator
+    wire [15:0] cm5_in0_re;
+    wire [15:0] cm5_in0_im;
+    wire [15:0] cm5_in1_re;
+    wire [15:0] cm5_in1_im;
+    wire [15:0] cm5_out0_re;
+    wire [15:0] cm5_out0_im;
+    wire [15:0] cm5_out1_re;
+    wire [15:0] cm5_out1_im;
+
+    predelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY + L2_L3_DELAY + L3_L4_DELAY + L4_L5_DELAY - 1),     // 29
+                          .DELAY_BEFORE_SAVING(L4_L5_DELAY_BEFORE_SAVING),                              // 28
+                          .NUM_INPUTS_PER_PATH(32))
+    PreDelay_Commutator5 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .bf_out0_re(bf4_out0_re),
+                          .bf_out0_im(bf4_out0_im),
+                          .bf_out1_re(bf4_out1_re),
+                          .bf_out1_im(bf4_out1_im),
+                          .cm_in0_re(cm5_in0_re),
+                          .cm_in0_im(cm5_in0_im),
+                          .cm_in1_re(cm5_in1_re),
+                          .cm_in1_im(cm5_in1_im));
+
+    // Commutator
+    commutator_radix2 Commutator5 (.in_0_re(cm5_in0_re),
+                                   .in_0_im(cm5_in0_im),
+                                   .in_1_re(cm5_in1_re),
+                                   .in_1_im(cm5_in1_im),
+                                   .pattern(pattern5),
+                                   .out_0_re(cm5_out0_re),
+                                   .out_0_im(cm5_out0_im),
+                                   .out_1_re(cm5_out1_re),
+                                   .out_1_im(cm5_out1_im));
+
+    // Post-Delay Commutator
+    wire [15:0] bf5_in0_re;
+    wire [15:0] bf5_in0_im;
+    wire [15:0] bf5_in1_re;
+    wire [15:0] bf5_in1_im;
+    wire [15:0] bf5_out0_re;
+    wire [15:0] bf5_out0_im;
+    wire [15:0] bf5_out1_re;
+    wire [15:0] bf5_out1_im;
+
+    postdelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY + L2_L3_DELAY + L3_L4_DELAY + L4_L5_DELAY - 1),  // 29
+                           .DELAY_BEFORE_SAVING(L4_L5_DELAY_BEFORE_SAVING),                           // 28
+                           .NUM_INPUTS_PER_PATH(32))
+    PostDelay_Commutator5 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .cm_out0_re(cm5_out0_re),
+                          .cm_out0_im(cm5_out0_im),
+                          .cm_out1_re(cm5_out1_re),
+                          .cm_out1_im(cm5_out1_im),
+                          .bf_in0_re(bf5_in0_re),
+                          .bf_in0_im(bf5_in0_im),
+                          .bf_in1_re(bf5_in1_re),
+                          .bf_in1_im(bf5_in1_im));
+
+    // Twiddle MUX5 (Choose between W0,W16)
+    wire [15:0] twiddle5_re;
+    wire [15:0] twiddle5_im;
+
+    // Selection Signal: [4:0] twiddle_sel5 (Available range is 0,16)
+    // Input: 512 bits; (twiddle_lut_re, twiddle_lut_im)
+    // Output: 16 bits; (twiddle5_re, twiddle5_im)
+    assign twiddle5_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel5)*NUM_BITS_PER_INPUT)+:15];
+    assign twiddle5_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel5)*NUM_BITS_PER_INPUT)+:15];
+
+    // Butterfly Unit (with Twiddle Factor)
+    bf_radix2 BF5 (.A_re(bf5_in0_re),
+                  .A_im(bf5_in0_im),
+                  .B_re(bf5_in1_re),
+                  .B_im(bf5_in1_im),
+                  .W_re(twiddle5_re),
+                  .W_im(twiddle5_im),
+                  .Y0_re(bf5_out0_re),
+                  .Y0_im(bf5_out0_im),
+                  .Y1_re(bf5_out1_re),
+                  .Y1_im(bf5_out1_im));
 
 
 /************************************* LAYER 6 *************************************/
-    // butterfly radix calculation without twiddle factor
-    // Y0 = A + B
-    // Y1 = A - B
-    // instantiate your bf_radix2_noW.v here
-    // fill in your code here
+    // Pre-Delay to Commutator
+    wire [15:0] cm6_in0_re;
+    wire [15:0] cm6_in0_im;
+    wire [15:0] cm6_in1_re;
+    wire [15:0] cm6_in1_im;
+    wire [15:0] cm6_out0_re;
+    wire [15:0] cm6_out0_im;
+    wire [15:0] cm6_out1_re;
+    wire [15:0] cm6_out1_im;
 
+    predelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY + L2_L3_DELAY + L3_L4_DELAY + L4_L5_DELAY + L5_L6_DELAY - 1),     // 30
+                          .DELAY_BEFORE_SAVING(L5_L6_DELAY_BEFORE_SAVING),                                            // 30
+                          .NUM_INPUTS_PER_PATH(32))
+    PreDelay_Commutator6 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .bf_out0_re(bf5_out0_re),
+                          .bf_out0_im(bf5_out0_im),
+                          .bf_out1_re(bf5_out1_re),
+                          .bf_out1_im(bf5_out1_im),
+                          .cm_in0_re(cm6_in0_re),
+                          .cm_in0_im(cm6_in0_im),
+                          .cm_in1_re(cm6_in1_re),
+                          .cm_in1_im(cm6_in1_im));
+
+    // Commutator
+    commutator_radix2 Commutator6 (.in_0_re(cm6_in0_re),
+                                   .in_0_im(cm6_in0_im),
+                                   .in_1_re(cm6_in1_re),
+                                   .in_1_im(cm6_in1_im),
+                                   .pattern(pattern6),
+                                   .out_0_re(cm6_out0_re),
+                                   .out_0_im(cm6_out0_im),
+                                   .out_1_re(cm6_out1_re),
+                                   .out_1_im(cm6_out1_im));
+
+    // Post-Delay Commutator
+    wire [15:0] bf6_in0_re;
+    wire [15:0] bf6_in0_im;
+    wire [15:0] bf6_in1_re;
+    wire [15:0] bf6_in1_im;
+    wire [15:0] bf6_out0_re;
+    wire [15:0] bf6_out0_im;
+    wire [15:0] bf6_out1_re;
+    wire [15:0] bf6_out1_im;
+
+    postdelay_commutator #(.DELAY_CYCLES(L1_L2_DELAY + L2_L3_DELAY + L3_L4_DELAY + L4_L5_DELAY + L5_L6_DELAY - 1),  // 30
+                           .DELAY_BEFORE_SAVING(L5_L6_DELAY_BEFORE_SAVING),                                         // 30
+                           .NUM_INPUTS_PER_PATH(32))
+    PostDelay_Commutator6 (.CLK(CLK),
+                          .cntr_IFFT_input_pairs(cntr_IFFT_input_pairs),
+                          .cm_out0_re(cm6_out0_re),
+                          .cm_out0_im(cm6_out0_im),
+                          .cm_out1_re(cm6_out1_re),
+                          .cm_out1_im(cm6_out1_im),
+                          .bf_in0_re(bf6_in0_re),
+                          .bf_in0_im(bf6_in0_im),
+                          .bf_in1_re(bf6_in1_re),
+                          .bf_in1_im(bf6_in1_im));
+
+    // Butterfly Unit (no Twiddle Factor)
+    bf_radix2_noW BF6 (.A_re(bf6_in0_re),
+                       .A_im(bf6_in0_im),
+                       .B_re(bf6_in1_re),
+                       .B_im(bf6_in1_im),
+                       .Y0_re(bf6_out0_re),
+                       .Y0_im(bf6_out0_im),
+                       .Y1_re(bf6_out1_re),
+                       .Y1_im(bf6_out1_im));
+    
+    assign ifft_out0_re = bf6_out0_re;
+    assign ifft_out0_im = bf6_out0_im;
+    assign ifft_out1_re = bf6_out1_re;
+    assign ifft_out1_im = bf6_out1_im;
 
 
 endmodule

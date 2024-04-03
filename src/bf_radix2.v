@@ -1,4 +1,4 @@
-// input ports
+// Input ports
 // A_re    -the 1st input (real part) of the radix butterfly unit (16 bits)
 // B_re    -the 2nd input (real part) of the radix butterfly unit (16 bits)
 // W_re    -the twiddle factor (real part) (16 bits)
@@ -6,7 +6,7 @@
 // B_im    -the 2nd input (imag part) of the radix butterfly unit (16 bits)
 // W_im    -the twiddle factor (imag part) (16 bits)
 
-// output ports
+// Output ports
 // Y0_re    -the 1st output (real part) of the radix butterfly unit (16 bits)
 // Y1_re    -the 2nd output (real part) of the radix butterfly unit (16 bits)
 // Y0_im    -the 1st output (imag part) of the radix butterfly unit (16 bits)
@@ -26,12 +26,12 @@ module bf_radix2
         output signed [15:0] Y1_im
     );
 
-
 // A, B, W, Y0, Y1 are complex numbers 
 // Real and Img parts represented using 2's complement and fixed point representation
 // 1 sign bit, 7 integer bits, 8 fractional bits
 localparam FIXED_POINT_NUM_INTEGER_BITS = 7;
 localparam FIXED_POINT_NUM_FRACTIONAL_BITS = 8;
+
 
 wire signed [15:0] A_minus_B_re;
 wire signed [15:0] A_minus_B_im;
@@ -52,7 +52,39 @@ assign A_minus_B_im = (A_im - B_im);
 assign intermediate_re = (A_minus_B_re * W_re) - (A_minus_B_im * W_im);
 assign intermediate_im = (A_minus_B_re * W_im) + (A_minus_B_im * W_re);
 
-assign Y1_re = intermediate_re >> FIXED_POINT_NUM_FRACTIONAL_BITS;
-assign Y1_im = intermediate_im >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+assign Y1_re = intermediate_re >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+assign Y1_im = intermediate_im >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+
+/*
+wire signed [15:0] intermediate1_re;
+wire signed [15:0] intermediate2_re;
+assign intermediate1_re = (A_minus_B_re * W_re) >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+assign intermediate2_re = (A_minus_B_im * W_im) >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+assign Y1_re = intermediate1_re - intermediate2_re;
+
+wire signed [15:0] intermediate1_im;
+wire signed [15:0] intermediate2_im;
+assign intermediate1_im = (A_minus_B_re * W_im) >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+assign intermediate2_im = (A_minus_B_im * W_re) >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+assign Y1_im = intermediate1_im + intermediate2_im;
+
+assign intermediate_re = (A_minus_B_re * W_re) - (A_minus_B_im * W_im);
+assign intermediate_im = (A_minus_B_re * W_im) + (A_minus_B_im * W_re);
+
+assign Y1_re = intermediate_re >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+assign Y1_im = intermediate_im >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+*/
+
+/*
+assign Y0_re = A_re;
+assign Y0_im = A_im;
+assign Y1_re = B_re;
+assign Y1_im = B_im;
+*/
+
+// Take the middle 16 bits of the 32bit register
+// https://projectf.io/posts/fixed-point-numbers-in-verilog/
+//assign Y1_re = intermediate_re[8+:16];
+//assign Y1_im = intermediate_im[8+:16];
 
 endmodule
