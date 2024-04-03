@@ -34,7 +34,7 @@ module ifft64_radix2
         input [511:0] ifft_in0_im,
         input [511:0] ifft_in1_re,
         input [511:0] ifft_in1_im,
-        input [511:0] twiddle_lut_re,
+        input signed [511:0] twiddle_lut_re,
         input [511:0] twiddle_lut_im,
 
         // From IFFT_CTRL
@@ -112,8 +112,8 @@ module ifft64_radix2
     // Selection Signal: [4:0] twiddle_sel1 (Available range is 0,1,2,...,31)
     // Input: 512 bits; (twiddle_lut_re, twiddle_lut_im)
     // Output: 16 bits; (twiddle1_re, twiddle1_im)
-    assign twiddle1_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel1)*NUM_BITS_PER_INPUT)+:15];
-    assign twiddle1_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel1)*NUM_BITS_PER_INPUT)+:15];
+    assign twiddle1_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel1)*NUM_BITS_PER_INPUT)+:16];
+    assign twiddle1_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel1)*NUM_BITS_PER_INPUT)+:16];
 
     // Butterfly Unit (with Twiddle Factor)
     wire [15:0] bf1_out0_re;
@@ -200,8 +200,8 @@ module ifft64_radix2
     // Selection Signal: [4:0] twiddle_sel2 (Available range is 0,2,4,...,30)
     // Input: 512 bits; (twiddle_lut_re, twiddle_lut_im)
     // Output: 16 bits; (twiddle2_re, twiddle2_im)
-    assign twiddle2_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel2)*NUM_BITS_PER_INPUT)+:15];
-    assign twiddle2_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel2)*NUM_BITS_PER_INPUT)+:15];
+    assign twiddle2_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel2)*NUM_BITS_PER_INPUT)+:16];
+    assign twiddle2_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel2)*NUM_BITS_PER_INPUT)+:16];
 
     // Butterfly Unit (with Twiddle Factor)
     bf_radix2 BF2 (.A_re(bf2_in0_re),
@@ -283,8 +283,8 @@ module ifft64_radix2
     // Selection Signal: [4:0] twiddle_sel3 (Available range is 0,4,8,...,28)
     // Input: 512 bits; (twiddle_lut_re, twiddle_lut_im)
     // Output: 16 bits; (twiddle3_re, twiddle3_im)
-    assign twiddle3_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel3)*NUM_BITS_PER_INPUT)+:15];
-    assign twiddle3_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel3)*NUM_BITS_PER_INPUT)+:15];
+    assign twiddle3_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel3)*NUM_BITS_PER_INPUT)+:16];
+    assign twiddle3_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel3)*NUM_BITS_PER_INPUT)+:16];
 
     // Butterfly Unit (with Twiddle Factor)
     bf_radix2 BF3 (.A_re(bf3_in0_re),
@@ -366,8 +366,8 @@ module ifft64_radix2
     // Selection Signal: [4:0] twiddle_sel4 (Available range is 0,8,16,24)
     // Input: 512 bits; (twiddle_lut_re, twiddle_lut_im)
     // Output: 16 bits; (twiddle4_re, twiddle4_im)
-    assign twiddle4_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel4)*NUM_BITS_PER_INPUT)+:15];
-    assign twiddle4_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel4)*NUM_BITS_PER_INPUT)+:15];
+    assign twiddle4_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel4)*NUM_BITS_PER_INPUT)+:16];
+    assign twiddle4_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel4)*NUM_BITS_PER_INPUT)+:16];
 
     // Butterfly Unit (with Twiddle Factor)
     bf_radix2 BF4 (.A_re(bf4_in0_re),
@@ -449,8 +449,8 @@ module ifft64_radix2
     // Selection Signal: [4:0] twiddle_sel5 (Available range is 0,16)
     // Input: 512 bits; (twiddle_lut_re, twiddle_lut_im)
     // Output: 16 bits; (twiddle5_re, twiddle5_im)
-    assign twiddle5_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel5)*NUM_BITS_PER_INPUT)+:15];
-    assign twiddle5_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel5)*NUM_BITS_PER_INPUT)+:15];
+    assign twiddle5_re = twiddle_lut_re[((CNTR_MAX_VALUE-twiddle_sel5)*NUM_BITS_PER_INPUT)+:16];
+    assign twiddle5_im = twiddle_lut_im[((CNTR_MAX_VALUE-twiddle_sel5)*NUM_BITS_PER_INPUT)+:16];
 
     // Butterfly Unit (with Twiddle Factor)
     bf_radix2 BF5 (.A_re(bf5_in0_re),

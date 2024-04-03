@@ -22,19 +22,18 @@ module bf_radix2_noW
         output signed [15:0] Y1_im
     );
 
-/*
-assign Y0_re = A_re;
-assign Y0_im = A_im;
-assign Y1_re = B_re;
-assign Y1_im = B_im;
-*/
- 
 // A, B, Y0, Y1 are complex numbers 
 // Real and Img parts represented using 2's complement and fixed point representation
 // 1 sign bit, 7 integer bits, 8 fractional bits
 localparam FIXED_POINT_NUM_INTEGER_BITS = 7;
 localparam FIXED_POINT_NUM_FRACTIONAL_BITS = 8;
 
+/*
+assign Y0_re = A_re;
+assign Y0_im = A_im;
+assign Y1_re = B_re;
+assign Y1_im = B_im;
+*/
 
 // Compute Y0 = A + B
 assign Y0_re = (A_re + B_re);
