@@ -21,9 +21,9 @@ module bf_radix2
         input signed [15:0] B_im,
         input signed [15:0] W_im,
         output signed [15:0] Y0_re,
-        output signed [15:0] Y1_re,
+        output reg signed [15:0] Y1_re,
         output signed [15:0] Y0_im,
-        output signed [15:0] Y1_im
+        output reg signed [15:0] Y1_im
     );
 
 // A, B, W, Y0, Y1 are complex numbers 
@@ -32,6 +32,16 @@ module bf_radix2
 localparam FIXED_POINT_NUM_INTEGER_BITS = 7;
 localparam FIXED_POINT_NUM_FRACTIONAL_BITS = 8;
 
+
+// Compute Y0 = A + B
+assign Y0_re = (A_re + B_re);
+assign Y0_im = (A_im + B_im);
+
+
+// Compute Y1 = (A-B)*W
+// (R+jI) = (X+jY)(C+jS)    ; (X+jY) is A-B, (C+jS) is twiddle factor (noting that C and S are stored in our twiddle factor LUT)
+//        = (XC-YS)+j(XS+YC); R = XC-YS, I = XS+YC
+//https://mathworld.wolfram.com/ComplexMultiplication.html
 wire signed [15:0] X_re;
 wire signed [15:0] X_im;
 wire signed [31:0] extended_X_re;
@@ -39,22 +49,6 @@ wire signed [31:0] extended_X_im;
 wire signed [31:0] extended_W_re;
 wire signed [31:0] extended_W_im;
 
-wire signed [15:0] intermediate_re;
-wire signed [15:0] intermediate_im;
-
-wire signed [63:0] intermediate_re1;
-wire signed [63:0] intermediate_re2;
-wire signed [63:0] intermediate_im1;
-wire signed [63:0] intermediate_im2;
-
-// Compute Y0 = A + B
-assign Y0_re = (A_re + B_re);
-assign Y0_im = (A_im + B_im);
-
-// Compute Y1 = (A-B)*W
-// (R+jI) = (X+jY)(C+jS)    ; (X+jY) is A-B, (C+jS) is twiddle factor (noting that C and S are stored in our twiddle factor LUT)
-//        = (XC-YS)+j(XS+YC); R = XC-YS, I = XS+YC
-//https://mathworld.wolfram.com/ComplexMultiplication.html
 assign X_re = (A_re - B_re);
 assign X_im = (A_im - B_im);
 assign extended_X_re = {{16{X_re[15]}}, X_re};
@@ -62,47 +56,81 @@ assign extended_X_im = {{16{X_im[15]}}, X_im};
 assign extended_W_re = {{16{W_re[15]}}, W_re};
 assign extended_W_im = {{16{W_im[15]}}, W_im};
 
-wire signed [15:0] intermediate_re3;
-wire signed [15:0] intermediate_re4;
-wire signed [15:0] intermediate_re5;
-wire signed [15:0] intermediate_re6;
-wire signed [15:0] intermediate_re7;
-
-wire signed [15:0] intermediate_im3;
-wire signed [15:0] intermediate_im4;
-wire signed [15:0] intermediate_im5;
-wire signed [15:0] intermediate_im6;
-wire signed [15:0] intermediate_im7;
+/********************************************* Y1_re *********************************************/
+wire signed [63:0] intermediate_re1;
+wire signed [63:0] intermediate_re2;
+reg signed [15:0] intermediate_re3;
+reg signed [15:0] intermediate_re4;
+reg signed [15:0] intermediate_re5;
+reg signed [15:0] intermediate_re6;
+reg signed [15:0] intermediate_re7;
 
 assign intermediate_re1 = (extended_X_re * extended_W_re);  // 64bits
 assign intermediate_re2 = (extended_X_im * extended_W_im);  //64bits
 
-assign intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
-assign intermediate_re4 = (intermediate_re1[63]) ? intermediate_re3 + intermediate_re1[7] : intermediate_re3 - intermediate_re1[7];
+always @(*) begin
+    intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-assign intermediate_re5 = intermediate_re2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
-assign intermediate_re6 = (intermediate_re2[63]) ? intermediate_re5 + intermediate_re2[7] : intermediate_re5 - intermediate_re2[7];
+    if (intermediate_re1[63]) begin
+        intermediate_re4 = intermediate_re3 + intermediate_re1[7];
+    end
+    else begin
+        intermediate_re4 = intermediate_re3 - intermediate_re1[7];
+    end
+end
 
-assign intermediate_re = intermediate_re4 - intermediate_re6;
+always @(*) begin
+    intermediate_re5 = intermediate_re2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+
+    if (intermediate_re2[63]) begin
+        intermediate_re6 = intermediate_re5 + intermediate_re2[7];
+    end
+    else begin
+        intermediate_re6 = intermediate_re5 - intermediate_re2[7];
+    end
+end
+
+always @(*) begin
+    Y1_re = intermediate_re4 - intermediate_re6;
+end
+
+/********************************************* Y1_im *********************************************/
+wire signed [63:0] intermediate_im1;
+wire signed [63:0] intermediate_im2;
+reg signed [15:0] intermediate_im3;
+reg signed [15:0] intermediate_im4;
+reg signed [15:0] intermediate_im5;
+reg signed [15:0] intermediate_im6;
+reg signed [15:0] intermediate_im7;
 
 
-assign intermediate_im1 = (extended_X_re * extended_W_im);
-assign intermediate_im2 = (extended_X_im * extended_W_re);
+assign intermediate_im1 = (extended_X_re * extended_W_im);  // 64bits
+assign intermediate_im2 = (extended_X_im * extended_W_re);  // 64 bits
 
-assign intermediate_im3 = intermediate_im1[31:0] >> FIXED_POINT_NUM_FRACTIONAL_BITS;
-assign intermediate_im4 = (intermediate_im1[63]) ? intermediate_im3 + intermediate_im1[7] : intermediate_im3 - intermediate_im1[7];
+always @(*) begin
+    intermediate_im3 = intermediate_im1[31:0] >> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-assign intermediate_im5 = intermediate_im2[31:0] >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+    if (intermediate_im1[63]) begin
+        intermediate_im4 = intermediate_im3 + intermediate_im1[7];
+    end
+    else begin
+        intermediate_im4 = intermediate_im3 - intermediate_im1[7];
+    end
+end
 
-assign intermediate_im6 = (intermediate_im2[63]) ? (intermediate_im2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS) + intermediate_im2[7]
-                                : (intermediate_im2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS) - intermediate_im2[7];
+always @(*) begin
+    intermediate_im5 = intermediate_im2[31:0] >> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-assign intermediate_im = intermediate_im4 + intermediate_im6;
+    if (intermediate_im2[63]) begin
+        intermediate_im6 = intermediate_im5 + intermediate_im2[7];
+    end
+    else begin
+        intermediate_im6 = intermediate_im5 - intermediate_im2[7];
+    end
+end
 
-//assign intermediate_re = (extended_X_re * extended_W_re) - (extended_X_im * extended_W_im);
-//assign intermediate_im = (extended_X_re * extended_W_im) + (extended_X_im * extended_W_re);
-
-assign Y1_re = intermediate_re;
-assign Y1_im = intermediate_im;
+always @(*) begin
+    Y1_im = intermediate_im4 + intermediate_im6;
+end
 
 endmodule
