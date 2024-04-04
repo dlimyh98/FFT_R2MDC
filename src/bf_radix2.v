@@ -64,6 +64,8 @@ reg signed [15:0] intermediate_re4;
 reg signed [15:0] intermediate_re5;
 reg signed [15:0] intermediate_re6;
 reg signed [15:0] intermediate_re7;
+reg signed [16:0] roundcheck_re1;
+reg signed [16:0] roundcheck_re2;
 
 assign intermediate_re1 = (extended_X_re * extended_W_re);  // 64bits
 assign intermediate_re2 = (extended_X_im * extended_W_im);  //64bits
@@ -72,10 +74,19 @@ always @(*) begin
     intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
     if (intermediate_re1[63]) begin
-        intermediate_re4 = intermediate_re3 + intermediate_re1[7];
+        // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
+        roundcheck_re1 = intermediate_re3 + intermediate_re1[7];
+
+        if (roundcheck_re1 == 17'h08000) intermediate_re4 = 16'hFFFF;
+        else intermediate_re4 = roundcheck_re1[15:0];
     end
     else begin
-        intermediate_re4 = intermediate_re3 - intermediate_re1[7];
+        // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
+        roundcheck_re1 = intermediate_re3 - intermediate_re1[7];
+
+        if (roundcheck_re1 == 17'h1FFFF) intermediate_re4 = 16'h0;
+        else intermediate_re4 = roundcheck_re1[15:0];
+
     end
 end
 
@@ -83,10 +94,18 @@ always @(*) begin
     intermediate_re5 = intermediate_re2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
     if (intermediate_re2[63]) begin
-        intermediate_re6 = intermediate_re5 + intermediate_re2[7];
+        // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
+        roundcheck_re2 = intermediate_re5 + intermediate_re2[7];
+
+        if (roundcheck_re2 == 17'h08000) intermediate_re6 = 16'hFFFF;
+        else intermediate_re6 = roundcheck_re2[15:0];
     end
     else begin
-        intermediate_re6 = intermediate_re5 - intermediate_re2[7];
+        // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
+        roundcheck_re2 = intermediate_re5 - intermediate_re2[7];
+
+        if (roundcheck_re2 == 17'h1FFFF) intermediate_re6 = 16'h0;
+        else intermediate_re6 = roundcheck_re2[15:0];
     end
 end
 
@@ -102,6 +121,8 @@ reg signed [15:0] intermediate_im4;
 reg signed [15:0] intermediate_im5;
 reg signed [15:0] intermediate_im6;
 reg signed [15:0] intermediate_im7;
+reg signed [16:0] roundcheck_im1;
+reg signed [16:0] roundcheck_im2;
 
 
 assign intermediate_im1 = (extended_X_re * extended_W_im);  // 64bits
@@ -111,10 +132,18 @@ always @(*) begin
     intermediate_im3 = intermediate_im1[31:0] >> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
     if (intermediate_im1[63]) begin
-        intermediate_im4 = intermediate_im3 + intermediate_im1[7];
+        // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
+        roundcheck_im1 = intermediate_im3 + intermediate_im1[7];
+
+        if (roundcheck_im1 == 17'h08000) intermediate_im4 = 16'hFFFF;
+        else intermediate_im4 = roundcheck_im1[15:0];
     end
     else begin
-        intermediate_im4 = intermediate_im3 - intermediate_im1[7];
+        // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
+        roundcheck_im1 = intermediate_im3 - intermediate_im1[7];
+
+        if (roundcheck_im1 == 17'h1FFFF) intermediate_im4 = 16'h0;
+        else intermediate_im4 = roundcheck_im1[15:0];
     end
 end
 
@@ -122,10 +151,19 @@ always @(*) begin
     intermediate_im5 = intermediate_im2[31:0] >> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
     if (intermediate_im2[63]) begin
-        intermediate_im6 = intermediate_im5 + intermediate_im2[7];
+        // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
+        roundcheck_im2 = intermediate_im5 + intermediate_im2[7];
+
+        if (roundcheck_im2 == 17'h08000) intermediate_im6 = 16'hFFFF;
+        else intermediate_im6 = roundcheck_im2[15:0];
+
     end
     else begin
-        intermediate_im6 = intermediate_im5 - intermediate_im2[7];
+        // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
+        roundcheck_im2 = intermediate_im5 - intermediate_im2[7];
+
+        if (roundcheck_im2 == 17'h1FFFF) intermediate_im6 = 16'h0;
+        else intermediate_im6 = roundcheck_im2[15:0];
     end
 end
 
