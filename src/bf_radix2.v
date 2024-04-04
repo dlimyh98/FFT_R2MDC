@@ -73,9 +73,10 @@ assign intermediate_re2 = (extended_X_im * extended_W_im);  //64bits
 always @(*) begin
     intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-    if (intermediate_re1[63]) begin
+    if (intermediate_re1[31]) begin
         // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
         roundcheck_re1 = intermediate_re3 + intermediate_re1[7];
+        //roundcheck_re1 = intermediate_re3 + 1'b1;
 
         if (roundcheck_re1 == 17'h08000) intermediate_re4 = 16'hFFFF;
         else intermediate_re4 = roundcheck_re1[15:0];
@@ -83,6 +84,7 @@ always @(*) begin
     else begin
         // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
         roundcheck_re1 = intermediate_re3 - intermediate_re1[7];
+        //roundcheck_re1 = intermediate_re3 - 1'b1;
 
         if (roundcheck_re1 == 17'h1FFFF) intermediate_re4 = 16'h0;
         else intermediate_re4 = roundcheck_re1[15:0];
@@ -93,9 +95,10 @@ end
 always @(*) begin
     intermediate_re5 = intermediate_re2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-    if (intermediate_re2[63]) begin
+    if (intermediate_re2[31]) begin
         // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
         roundcheck_re2 = intermediate_re5 + intermediate_re2[7];
+        //roundcheck_re2 = intermediate_re5 + 1'b1;
 
         if (roundcheck_re2 == 17'h08000) intermediate_re6 = 16'hFFFF;
         else intermediate_re6 = roundcheck_re2[15:0];
@@ -103,6 +106,7 @@ always @(*) begin
     else begin
         // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
         roundcheck_re2 = intermediate_re5 - intermediate_re2[7];
+        //roundcheck_re2 = intermediate_re5 - 1'b1;
 
         if (roundcheck_re2 == 17'h1FFFF) intermediate_re6 = 16'h0;
         else intermediate_re6 = roundcheck_re2[15:0];
@@ -129,11 +133,12 @@ assign intermediate_im1 = (extended_X_re * extended_W_im);  // 64bits
 assign intermediate_im2 = (extended_X_im * extended_W_re);  // 64 bits
 
 always @(*) begin
-    intermediate_im3 = intermediate_im1[31:0] >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+    intermediate_im3 = intermediate_im1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-    if (intermediate_im1[63]) begin
+    if (intermediate_im1[31]) begin
         // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
         roundcheck_im1 = intermediate_im3 + intermediate_im1[7];
+        //roundcheck_im1 = intermediate_im3 + 1'b1;
 
         if (roundcheck_im1 == 17'h08000) intermediate_im4 = 16'hFFFF;
         else intermediate_im4 = roundcheck_im1[15:0];
@@ -141,6 +146,7 @@ always @(*) begin
     else begin
         // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
         roundcheck_im1 = intermediate_im3 - intermediate_im1[7];
+        //roundcheck_im1 = intermediate_im3 - 1'b1;
 
         if (roundcheck_im1 == 17'h1FFFF) intermediate_im4 = 16'h0;
         else intermediate_im4 = roundcheck_im1[15:0];
@@ -148,11 +154,12 @@ always @(*) begin
 end
 
 always @(*) begin
-    intermediate_im5 = intermediate_im2[31:0] >> FIXED_POINT_NUM_FRACTIONAL_BITS;
+    intermediate_im5 = intermediate_im2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-    if (intermediate_im2[63]) begin
+    if (intermediate_im2[31]) begin
         // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
         roundcheck_im2 = intermediate_im5 + intermediate_im2[7];
+        //roundcheck_im2 = intermediate_im5 + 1'b1;
 
         if (roundcheck_im2 == 17'h08000) intermediate_im6 = 16'hFFFF;
         else intermediate_im6 = roundcheck_im2[15:0];
@@ -161,6 +168,7 @@ always @(*) begin
     else begin
         // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
         roundcheck_im2 = intermediate_im5 - intermediate_im2[7];
+        //roundcheck_im2 = intermediate_im5 - 1'b1;
 
         if (roundcheck_im2 == 17'h1FFFF) intermediate_im6 = 16'h0;
         else intermediate_im6 = roundcheck_im2[15:0];
