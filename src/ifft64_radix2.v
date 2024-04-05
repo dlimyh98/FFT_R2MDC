@@ -34,7 +34,7 @@ module ifft64_radix2
         input [511:0] ifft_in0_im,
         input [511:0] ifft_in1_re,
         input [511:0] ifft_in1_im,
-        input signed [511:0] twiddle_lut_re,
+        input [511:0] twiddle_lut_re,
         input [511:0] twiddle_lut_im,
 
         // From IFFT_CTRL

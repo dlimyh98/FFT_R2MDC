@@ -33,6 +33,7 @@ localparam FIXED_POINT_NUM_INTEGER_BITS = 7;
 localparam FIXED_POINT_NUM_FRACTIONAL_BITS = 8;
 
 
+
 // Compute Y0 = A + B
 assign Y0_re = (A_re + B_re);
 assign Y0_im = (A_im + B_im);
@@ -71,31 +72,24 @@ assign intermediate_re1 = (extended_X_re * extended_W_re);  // 64bits
 assign intermediate_re2 = (extended_X_im * extended_W_im);  //64bits
 
 /*
-wire signed [63:0] re_alt_intmd;
-reg signed [15:0] re_alt_out;
-
-assign re_alt_intmd = intermediate_re1 - intermediate_re2;
-
-always @(*) begin
-    re_alt_out = re_alt_intmd[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
-
-    if (re_alt_intmd[31]) begin
-        re_alt_out = re_alt_out + re_alt_intmd[7];
-    end
-    else begin
-        re_alt_out = re_alt_out - re_alt_intmd[7];
-    end
-end
-
-always @(*) begin
-    Y1_re = re_alt_out;
-end
+localparam IWID = 32;
+localparam OWID = 24;
+reg signed [31:0] intermediate_data_re1;
+reg signed [31:0] intermediate_to_zero_re1;
+reg signed [31:0] intermediate_data_re2;
+reg signed [31:0] intermediate_to_zero_re2;
 */
 
 
 always @(*) begin
-    intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+    /*
+    intermediate_data_re1 = intermediate_re1[31:0];
+    intermediate_to_zero_re1 = intermediate_data_re1[(IWID-1):0] 
+                            + { {(OWID){1'b0}}, intermediate_data_re1[(IWID-1)], {(IWID-OWID-1){!intermediate_data_re1[(IWID-1)]}} };
+    intermediate_re4 = intermediate_to_zero_re1[(IWID-1):(IWID-OWID)];
+    */
 
+    intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
     if (intermediate_re1[31]) begin
         // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
         roundcheck_re1 = intermediate_re3 + intermediate_re1[7];
@@ -111,13 +105,19 @@ always @(*) begin
 
         if (roundcheck_re1 == 17'h1FFFF) intermediate_re4 = 16'h0;
         else intermediate_re4 = roundcheck_re1[15:0];
-
     end
 end
 
-always @(*) begin
-    intermediate_re5 = intermediate_re2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
+always @(*) begin
+    /*
+    intermediate_data_re2 = intermediate_re2[31:0];
+    intermediate_to_zero_re2 = intermediate_data_re2[(IWID-1):0] 
+                            + { {(OWID){1'b0}}, intermediate_data_re2[(IWID-1)], {(IWID-OWID-1){!intermediate_data_re2[(IWID-1)]}} };
+    intermediate_re6 = intermediate_to_zero_re2[(IWID-1):(IWID-OWID)];
+    */
+
+    intermediate_re5 = intermediate_re2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
     if (intermediate_re2[31]) begin
         // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
         roundcheck_re2 = intermediate_re5 + intermediate_re2[7];
@@ -156,31 +156,24 @@ reg signed [16:0] roundcheck_im2;
 assign intermediate_im1 = (extended_X_re * extended_W_im);  // 64bits
 assign intermediate_im2 = (extended_X_im * extended_W_re);  // 64 bits
 
-wire signed [63:0] im_alt_intmd;
-reg signed [15:0] im_alt_out;
 
 /*
-assign im_alt_intmd = intermediate_im1 + intermediate_im2;
-
-always @(*) begin
-    im_alt_out = im_alt_intmd[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
-
-    if (im_alt_intmd[31]) begin
-        im_alt_out = im_alt_out + im_alt_intmd[7];
-    end
-    else begin
-        im_alt_out = im_alt_out - im_alt_intmd[7];
-    end
-end
-
-always @(*) begin
-    Y1_im = im_alt_out;
-end
+reg signed [31:0] intermediate_data_im1;
+reg signed [31:0] intermediate_to_zero_im1;
+reg signed [31:0] intermediate_data_im2;
+reg signed [31:0] intermediate_to_zero_im2;
 */
 
-always @(*) begin
-    intermediate_im3 = intermediate_im1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
+always @(*) begin
+    /*
+    intermediate_data_im1 = intermediate_im1[31:0];
+    intermediate_to_zero_im1 = intermediate_data_im1[(IWID-1):0] 
+                            + { {(OWID){1'b0}}, intermediate_data_im1[(IWID-1)], {(IWID-OWID-1){!intermediate_data_im1[(IWID-1)]}} };
+    intermediate_im4 = intermediate_to_zero_im1[(IWID-1):(IWID-OWID)];
+    */
+
+    intermediate_im3 = intermediate_im1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
     if (intermediate_im1[31]) begin
         // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
         roundcheck_im1 = intermediate_im3 + intermediate_im1[7];
@@ -200,8 +193,14 @@ always @(*) begin
 end
 
 always @(*) begin
-    intermediate_im5 = intermediate_im2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+    /*
+    intermediate_data_im2 = intermediate_im2[31:0];
+    intermediate_to_zero_im2 = intermediate_data_im2[(IWID-1):0] 
+                            + { {(OWID){1'b0}}, intermediate_data_im2[(IWID-1)], {(IWID-OWID-1){!intermediate_data_im2[(IWID-1)]}} };
+    intermediate_im6 = intermediate_to_zero_im2[(IWID-1):(IWID-OWID)];
+    */
 
+    intermediate_im5 = intermediate_im2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
     if (intermediate_im2[31]) begin
         // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
         roundcheck_im2 = intermediate_im5 + intermediate_im2[7];
