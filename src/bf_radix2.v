@@ -70,6 +70,29 @@ reg signed [16:0] roundcheck_re2;
 assign intermediate_re1 = (extended_X_re * extended_W_re);  // 64bits
 assign intermediate_re2 = (extended_X_im * extended_W_im);  //64bits
 
+/*
+wire signed [63:0] re_alt_intmd;
+reg signed [15:0] re_alt_out;
+
+assign re_alt_intmd = intermediate_re1 - intermediate_re2;
+
+always @(*) begin
+    re_alt_out = re_alt_intmd[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+
+    if (re_alt_intmd[31]) begin
+        re_alt_out = re_alt_out + re_alt_intmd[7];
+    end
+    else begin
+        re_alt_out = re_alt_out - re_alt_intmd[7];
+    end
+end
+
+always @(*) begin
+    Y1_re = re_alt_out;
+end
+*/
+
+
 always @(*) begin
     intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
@@ -117,6 +140,7 @@ always @(*) begin
     Y1_re = intermediate_re4 - intermediate_re6;
 end
 
+
 /********************************************* Y1_im *********************************************/
 wire signed [63:0] intermediate_im1;
 wire signed [63:0] intermediate_im2;
@@ -131,6 +155,28 @@ reg signed [16:0] roundcheck_im2;
 
 assign intermediate_im1 = (extended_X_re * extended_W_im);  // 64bits
 assign intermediate_im2 = (extended_X_im * extended_W_re);  // 64 bits
+
+wire signed [63:0] im_alt_intmd;
+reg signed [15:0] im_alt_out;
+
+/*
+assign im_alt_intmd = intermediate_im1 + intermediate_im2;
+
+always @(*) begin
+    im_alt_out = im_alt_intmd[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+
+    if (im_alt_intmd[31]) begin
+        im_alt_out = im_alt_out + im_alt_intmd[7];
+    end
+    else begin
+        im_alt_out = im_alt_out - im_alt_intmd[7];
+    end
+end
+
+always @(*) begin
+    Y1_im = im_alt_out;
+end
+*/
 
 always @(*) begin
     intermediate_im3 = intermediate_im1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
