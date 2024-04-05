@@ -39,6 +39,7 @@ assign Y0_re = (A_re + B_re);
 assign Y0_im = (A_im + B_im);
 
 
+
 // Compute Y1 = (A-B)*W
 // (R+jI) = (X+jY)(C+jS)    ; (X+jY) is A-B, (C+jS) is twiddle factor (noting that C and S are stored in our twiddle factor LUT)
 //        = (XC-YS)+j(XS+YC); R = XC-YS, I = XS+YC
@@ -60,79 +61,39 @@ assign extended_W_im = {{16{W_im[15]}}, W_im};
 /********************************************* Y1_re *********************************************/
 wire signed [63:0] intermediate_re1;
 wire signed [63:0] intermediate_re2;
-reg signed [15:0] intermediate_re3;
+reg signed [23:0] intermediate_re3;
 reg signed [15:0] intermediate_re4;
-reg signed [15:0] intermediate_re5;
+reg signed [23:0] intermediate_re5;
 reg signed [15:0] intermediate_re6;
-reg signed [15:0] intermediate_re7;
-reg signed [16:0] roundcheck_re1;
-reg signed [16:0] roundcheck_re2;
 
 assign intermediate_re1 = (extended_X_re * extended_W_re);  // 64bits
 assign intermediate_re2 = (extended_X_im * extended_W_im);  //64bits
 
-/*
-localparam IWID = 32;
-localparam OWID = 24;
-reg signed [31:0] intermediate_data_re1;
-reg signed [31:0] intermediate_to_zero_re1;
-reg signed [31:0] intermediate_data_re2;
-reg signed [31:0] intermediate_to_zero_re2;
-*/
-
 
 always @(*) begin
-    /*
-    intermediate_data_re1 = intermediate_re1[31:0];
-    intermediate_to_zero_re1 = intermediate_data_re1[(IWID-1):0] 
-                            + { {(OWID){1'b0}}, intermediate_data_re1[(IWID-1)], {(IWID-OWID-1){!intermediate_data_re1[(IWID-1)]}} };
-    intermediate_re4 = intermediate_to_zero_re1[(IWID-1):(IWID-OWID)];
-    */
-
     intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
-    if (intermediate_re1[31]) begin
-        // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
-        roundcheck_re1 = intermediate_re3 + intermediate_re1[7];
-        //roundcheck_re1 = intermediate_re3 + 1'b1;
 
-        if (roundcheck_re1 == 17'h08000) intermediate_re4 = 16'hFFFF;
-        else intermediate_re4 = roundcheck_re1[15:0];
+    if (intermediate_re1[31]) begin
+        intermediate_re4 = intermediate_re3 + 2'sb01;
     end
     else begin
-        // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
-        roundcheck_re1 = intermediate_re3 - intermediate_re1[7];
-        //roundcheck_re1 = intermediate_re3 - 1'b1;
-
-        if (roundcheck_re1 == 17'h1FFFF) intermediate_re4 = 16'h0;
-        else intermediate_re4 = roundcheck_re1[15:0];
+        // For positive numbers, truncation by rightshifting ALWAYS rounds to zero
+        // https://stackoverflow.com/questions/60942450/negative-fixed-point-number-representation
+        intermediate_re4 = intermediate_re3;
     end
 end
 
 
 always @(*) begin
-    /*
-    intermediate_data_re2 = intermediate_re2[31:0];
-    intermediate_to_zero_re2 = intermediate_data_re2[(IWID-1):0] 
-                            + { {(OWID){1'b0}}, intermediate_data_re2[(IWID-1)], {(IWID-OWID-1){!intermediate_data_re2[(IWID-1)]}} };
-    intermediate_re6 = intermediate_to_zero_re2[(IWID-1):(IWID-OWID)];
-    */
-
     intermediate_re5 = intermediate_re2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
-    if (intermediate_re2[31]) begin
-        // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
-        roundcheck_re2 = intermediate_re5 + intermediate_re2[7];
-        //roundcheck_re2 = intermediate_re5 + 1'b1;
 
-        if (roundcheck_re2 == 17'h08000) intermediate_re6 = 16'hFFFF;
-        else intermediate_re6 = roundcheck_re2[15:0];
+    if (intermediate_re2[31]) begin
+        intermediate_re6 = intermediate_re5 + 2'sb01;
     end
     else begin
-        // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
-        roundcheck_re2 = intermediate_re5 - intermediate_re2[7];
-        //roundcheck_re2 = intermediate_re5 - 1'b1;
-
-        if (roundcheck_re2 == 17'h1FFFF) intermediate_re6 = 16'h0;
-        else intermediate_re6 = roundcheck_re2[15:0];
+        // For positive numbers, truncation by rightshifting ALWAYS rounds to zero
+        // https://stackoverflow.com/questions/60942450/negative-fixed-point-number-representation
+        intermediate_re6 = intermediate_re5;
     end
 end
 
@@ -144,79 +105,38 @@ end
 /********************************************* Y1_im *********************************************/
 wire signed [63:0] intermediate_im1;
 wire signed [63:0] intermediate_im2;
-reg signed [15:0] intermediate_im3;
+reg signed [23:0] intermediate_im3;
 reg signed [15:0] intermediate_im4;
-reg signed [15:0] intermediate_im5;
+reg signed [23:0] intermediate_im5;
 reg signed [15:0] intermediate_im6;
-reg signed [15:0] intermediate_im7;
-reg signed [16:0] roundcheck_im1;
-reg signed [16:0] roundcheck_im2;
-
 
 assign intermediate_im1 = (extended_X_re * extended_W_im);  // 64bits
 assign intermediate_im2 = (extended_X_im * extended_W_re);  // 64 bits
 
 
-/*
-reg signed [31:0] intermediate_data_im1;
-reg signed [31:0] intermediate_to_zero_im1;
-reg signed [31:0] intermediate_data_im2;
-reg signed [31:0] intermediate_to_zero_im2;
-*/
-
-
 always @(*) begin
-    /*
-    intermediate_data_im1 = intermediate_im1[31:0];
-    intermediate_to_zero_im1 = intermediate_data_im1[(IWID-1):0] 
-                            + { {(OWID){1'b0}}, intermediate_data_im1[(IWID-1)], {(IWID-OWID-1){!intermediate_data_im1[(IWID-1)]}} };
-    intermediate_im4 = intermediate_to_zero_im1[(IWID-1):(IWID-OWID)];
-    */
-
     intermediate_im3 = intermediate_im1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
-    if (intermediate_im1[31]) begin
-        // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
-        roundcheck_im1 = intermediate_im3 + intermediate_im1[7];
-        //roundcheck_im1 = intermediate_im3 + 1'b1;
 
-        if (roundcheck_im1 == 17'h08000) intermediate_im4 = 16'hFFFF;
-        else intermediate_im4 = roundcheck_im1[15:0];
+    if (intermediate_im1[31]) begin
+        intermediate_im4 = intermediate_im3 + 2'sb01;
     end
     else begin
-        // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
-        roundcheck_im1 = intermediate_im3 - intermediate_im1[7];
-        //roundcheck_im1 = intermediate_im3 - 1'b1;
-
-        if (roundcheck_im1 == 17'h1FFFF) intermediate_im4 = 16'h0;
-        else intermediate_im4 = roundcheck_im1[15:0];
+        // For positive numbers, truncation by rightshifting ALWAYS rounds to zero
+        // https://stackoverflow.com/questions/60942450/negative-fixed-point-number-representation
+        intermediate_im4 = intermediate_im3;
     end
 end
 
 always @(*) begin
-    /*
-    intermediate_data_im2 = intermediate_im2[31:0];
-    intermediate_to_zero_im2 = intermediate_data_im2[(IWID-1):0] 
-                            + { {(OWID){1'b0}}, intermediate_data_im2[(IWID-1)], {(IWID-OWID-1){!intermediate_data_im2[(IWID-1)]}} };
-    intermediate_im6 = intermediate_to_zero_im2[(IWID-1):(IWID-OWID)];
-    */
-
     intermediate_im5 = intermediate_im2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
+
     if (intermediate_im2[31]) begin
-        // Overflow check, 1111_1111_1111_1111 + 1 == 0000_0000_0000_0000
-        roundcheck_im2 = intermediate_im5 + intermediate_im2[7];
-        //roundcheck_im2 = intermediate_im5 + 1'b1;
-
-        if (roundcheck_im2 == 17'h08000) intermediate_im6 = 16'hFFFF;
-        else intermediate_im6 = roundcheck_im2[15:0];
-
+        intermediate_im6 = intermediate_im5 + 2'sb01;
     end
     else begin
-        // Underflow check, 0000_0000_0000_0000 - 1 == 1111_1111_1111_1111
-        roundcheck_im2 = intermediate_im5 - intermediate_im2[7];
-        //roundcheck_im2 = intermediate_im5 - 1'b1;
-
-        if (roundcheck_im2 == 17'h1FFFF) intermediate_im6 = 16'h0;
-        else intermediate_im6 = roundcheck_im2[15:0];
+        // For positive numbers, truncation by rightshifting ALWAYS rounds to zero
+        // https://stackoverflow.com/questions/60942450/negative-fixed-point-number-representation
+        intermediate_im6 = intermediate_im5;
     end
 end
 
