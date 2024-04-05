@@ -61,20 +61,28 @@ assign extended_W_im = {{16{W_im[15]}}, W_im};
 /********************************************* Y1_re *********************************************/
 wire signed [63:0] intermediate_re1;
 wire signed [63:0] intermediate_re2;
-reg signed [23:0] intermediate_re3;
+reg signed [31:0] intermediate_re3;
 reg signed [15:0] intermediate_re4;
-reg signed [23:0] intermediate_re5;
+reg signed [31:0] intermediate_re5;
 reg signed [15:0] intermediate_re6;
 
 assign intermediate_re1 = (extended_X_re * extended_W_re);  // 64bits
 assign intermediate_re2 = (extended_X_im * extended_W_im);  //64bits
 
+// https://stackoverflow.com/questions/78279346/rounding-down-the-absolute-value-of-signed-fixed-point-numbers-in-verilog/78280793#78280793
+
 
 always @(*) begin
     intermediate_re3 = intermediate_re1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-    if (intermediate_re1[31]) begin
+    if (intermediate_re1[31] && intermediate_re1[7:0] != 8'b0) begin
         intermediate_re4 = intermediate_re3 + 2'sb01;
+
+        // Overflow check
+        if (intermediate_re3 + 2'sb01 == 32'b0) begin
+            intermediate_re4 = 16'hFFFF;
+        end
+
     end
     else begin
         // For positive numbers, truncation by rightshifting ALWAYS rounds to zero
@@ -87,13 +95,17 @@ end
 always @(*) begin
     intermediate_re5 = intermediate_re2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-    if (intermediate_re2[31]) begin
+    if (intermediate_re2[31] && intermediate_re2[7:0] != 8'b0) begin
         intermediate_re6 = intermediate_re5 + 2'sb01;
     end
     else begin
         // For positive numbers, truncation by rightshifting ALWAYS rounds to zero
         // https://stackoverflow.com/questions/60942450/negative-fixed-point-number-representation
         intermediate_re6 = intermediate_re5;
+
+        if (intermediate_re5 + 2'sb01 == 32'b0) begin
+            intermediate_re6 = 16'hFFFF;
+        end
     end
 end
 
@@ -105,9 +117,9 @@ end
 /********************************************* Y1_im *********************************************/
 wire signed [63:0] intermediate_im1;
 wire signed [63:0] intermediate_im2;
-reg signed [23:0] intermediate_im3;
+reg signed [31:0] intermediate_im3;
 reg signed [15:0] intermediate_im4;
-reg signed [23:0] intermediate_im5;
+reg signed [31:0] intermediate_im5;
 reg signed [15:0] intermediate_im6;
 
 assign intermediate_im1 = (extended_X_re * extended_W_im);  // 64bits
@@ -117,8 +129,12 @@ assign intermediate_im2 = (extended_X_im * extended_W_re);  // 64 bits
 always @(*) begin
     intermediate_im3 = intermediate_im1[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-    if (intermediate_im1[31]) begin
+    if (intermediate_im1[31] && intermediate_im1[7:0] != 8'b0) begin
         intermediate_im4 = intermediate_im3 + 2'sb01;
+
+        if (intermediate_im3 + 2'sb01 == 32'b0) begin
+            intermediate_im4 = 16'hFFFF;
+        end
     end
     else begin
         // For positive numbers, truncation by rightshifting ALWAYS rounds to zero
@@ -130,8 +146,12 @@ end
 always @(*) begin
     intermediate_im5 = intermediate_im2[31:0] >>> FIXED_POINT_NUM_FRACTIONAL_BITS;
 
-    if (intermediate_im2[31]) begin
+    if (intermediate_im2[31] && intermediate_im2[7:0] != 8'b0) begin
         intermediate_im6 = intermediate_im5 + 2'sb01;
+
+        if (intermediate_im5 + 2'sb01 == 32'b0) begin
+            intermediate_im6 = 16'hFFFF;
+        end
     end
     else begin
         // For positive numbers, truncation by rightshifting ALWAYS rounds to zero
