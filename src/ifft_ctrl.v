@@ -216,11 +216,10 @@ module ifft_ctrl
                 twiddle_sel5 = twiddle_layer5_cntr*16;
             end
 
-            /*
             DONE: begin
-
+                // Remain in this state forever
+                Start_Check = 1'b0;
             end
-            */
         endcase
     end
 

@@ -32,6 +32,9 @@ module bf_radix2
 localparam FIXED_POINT_NUM_INTEGER_BITS = 7;
 localparam FIXED_POINT_NUM_FRACTIONAL_BITS = 8;
 
+// READ THIS - Asked by yours truly
+// https://stackoverflow.com/questions/78279346/rounding-down-the-absolute-value-of-signed-fixed-point-numbers-in-verilog/78280793#78280793
+
 
 
 // Compute Y0 = A + B
@@ -68,8 +71,6 @@ reg signed [15:0] intermediate_re6;
 
 assign intermediate_re1 = (extended_X_re * extended_W_re);  // 64bits
 assign intermediate_re2 = (extended_X_im * extended_W_im);  //64bits
-
-// https://stackoverflow.com/questions/78279346/rounding-down-the-absolute-value-of-signed-fixed-point-numbers-in-verilog/78280793#78280793
 
 
 always @(*) begin

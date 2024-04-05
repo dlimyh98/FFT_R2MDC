@@ -143,7 +143,6 @@ module tb_ifft64_radix2_top();
         #CLK_PERIOD;
         #CLK_PERIOD;
         #CLK_PERIOD;
-        $display("Testcase Checking Loop\n");
 
         for (j = 0; j < TEST_CASE-1; j = j + 1) begin
             for (k = 0; k < 32; k = k + 1) begin
