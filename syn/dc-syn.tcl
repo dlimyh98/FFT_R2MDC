@@ -8,8 +8,9 @@ analyze -library WORK -format verilog  ../src/ifft_ctrl.v
 analyze -library WORK -format verilog  ../src/bf_radix2.v
 analyze -library WORK -format verilog  ../src/bf_radix2_noW.v
 analyze -library WORK -format verilog  ../src/commutator_radix2.v
+analyze -library WORK -format verilog  ../src/postdelay_commutator.v
+analyze -library WORK -format verilog  ../src/predelay_commutator.v
 ##add more if needed
-
 
 
 elaborate $design_name
@@ -37,5 +38,3 @@ report_timing >                          ./report/timing_$design_name.rpt
 report_area >                            ./report/area_$design_name.rpt
 
 exit
-
-
