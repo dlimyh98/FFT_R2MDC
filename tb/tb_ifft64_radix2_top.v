@@ -56,9 +56,7 @@ module tb_ifft64_radix2_top();
     reg [15:0] test_ifft_out1_reference_im_bin [0:TEST_CASE*32-1];
 
     initial begin
-        /* Use below if compiling manually
-        $readmemb("../ref/test_twiddle_lut_re_bin.txt",test_twiddle_lut_re_bin);
-        $readmemb("../ref/test_twiddle_lut_im_bin.txt",test_twiddle_lut_im_bin);
+        // Use below if on VCS
         $readmemb("../ref/test_ifft_in0_re_bin.txt",test_ifft_in0_re_bin);
         $readmemb("../ref/test_ifft_in0_im_bin.txt",test_ifft_in0_im_bin);
         $readmemb("../ref/test_ifft_in1_re_bin.txt",test_ifft_in1_re_bin);
@@ -67,8 +65,9 @@ module tb_ifft64_radix2_top();
         $readmemb("../ref/test_ifft_out0_reference_im_bin.txt",test_ifft_out0_reference_im_bin);
         $readmemb("../ref/test_ifft_out1_reference_re_bin.txt",test_ifft_out1_reference_re_bin);
         $readmemb("../ref/test_ifft_out1_reference_im_bin.txt",test_ifft_out1_reference_im_bin);
-        */
 
+        // Use below if on Vivado
+        /*
         $readmemb("test_twiddle_lut_re_bin.txt",test_twiddle_lut_re_bin);
         $readmemb("test_twiddle_lut_im_bin.txt",test_twiddle_lut_im_bin);
         $readmemb("test_ifft_in0_re_bin.txt",test_ifft_in0_re_bin);
@@ -79,6 +78,7 @@ module tb_ifft64_radix2_top();
         $readmemb("test_ifft_out0_reference_im_bin.txt",test_ifft_out0_reference_im_bin);
         $readmemb("test_ifft_out1_reference_re_bin.txt",test_ifft_out1_reference_re_bin);
         $readmemb("test_ifft_out1_reference_im_bin.txt",test_ifft_out1_reference_im_bin);
+        */
     end
 
 
@@ -109,8 +109,9 @@ module tb_ifft64_radix2_top();
     reg [15:0] ifft_out1_im_check [0:TEST_CASE*32-1];
 
     initial begin
-	    //$vcdplusfile("waveform.vpd");
-        //$vcdpluson();
+        // Uncomment below two lines, if using DVE to view waveforms
+	    $vcdplusfile("waveform.vpd");
+        $vcdpluson();
         
         // Initial state
         arstn = 1'b1;
@@ -168,7 +169,8 @@ module tb_ifft64_radix2_top();
         $display("\n");
 
         // Stop
-        //$vcdplusoff();
+        // Uncomment below line, if using DVE to view waveforms
+        $vcdplusoff();
         $finish;	
     end
 
