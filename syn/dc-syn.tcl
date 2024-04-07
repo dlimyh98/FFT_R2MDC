@@ -23,6 +23,8 @@ link
 
 compile
 
+optimize_registers -print_critical_loop -minimum_period_only
+
 remove_unconnected_ports -blast_buses [get_cells "*" -hier]
 
 change_name -hierarchy -rules verilog

@@ -57,6 +57,8 @@ module tb_ifft64_radix2_top();
 
     initial begin
         // Use below if on VCS
+        $readmemb("../ref/test_twiddle_lut_re_bin.txt",test_twiddle_lut_re_bin);
+        $readmemb("../ref/test_twiddle_lut_im_bin.txt",test_twiddle_lut_im_bin);
         $readmemb("../ref/test_ifft_in0_re_bin.txt",test_ifft_in0_re_bin);
         $readmemb("../ref/test_ifft_in0_im_bin.txt",test_ifft_in0_im_bin);
         $readmemb("../ref/test_ifft_in1_re_bin.txt",test_ifft_in1_re_bin);
